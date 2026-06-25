@@ -12,10 +12,12 @@
 writing any code.
 
 ### Decisions made
-- **Product framing:** This is **one multi-tenant, configuration-driven product**,
-  NOT a forked-per-clinic template. Core idea: *one codebase + one config = any clinic*.
-- **Tenancy:** Design for **Tier 1** (single Supabase project + RLS, clinic = a row + config).
-  Keep **Tier 2** (dedicated project per clinic) as an env/config change later.
+- **Product framing:** This is **one configuration-driven codebase**, NOT a
+  forked-per-clinic template. Core idea: *one codebase + one config = one clinic*.
+- **Tenancy (revised same day):** **SINGLE-TENANT per deployment** — the app is a
+  template sold per clinic; each clinic = its own deploy + own Supabase + one
+  config in code. No shared multi-clinic DB, no `clinic_id`, no vendor
+  super-admin. (Superseded the initial multi-tenant "Tier 1/2" idea.)
 - **Tech stack locked:** Next.js (App Router) + TypeScript, Supabase (Postgres/Auth/Storage/RLS),
   Drizzle ORM, Tailwind + shadcn/ui, TanStack Query, React Hook Form + Zod, next-intl,
   Resend (email) + provider-agnostic SMS adapter, deploy on Vercel.
@@ -42,11 +44,11 @@ writing any code.
 - `docs/07-open-decisions.md` — open-decisions tracker
 - `docs/WORKLOG.md` — this dated journal
 
-### Still open (need answers before Phase 0 — see 07-open-decisions.md)
-1. Multi-tenancy model confirmation (recommend Tier 1)
+### Still open (see 07-open-decisions.md)
+1. ~~Multi-tenancy model~~ → RESOLVED: single-tenant per deployment.
 2. Mobile: Capacitor vs PWA-only (recommend Capacitor, PWA-first)
 3. Play Store now or later?
-4. First two pilot specialties (pick two *different* ones)
+4. ~~First two pilot specialties~~ → sample = Dental (Smile Dental) for now.
 5. Compliance bar / region (HIPAA / GDPR / other)
 
 ### Next session should

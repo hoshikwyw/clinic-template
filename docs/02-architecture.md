@@ -7,8 +7,9 @@ codebase serve every clinic. Build this **before** building features.
 
 ### A. Clinic Config (the brain)
 
-Each clinic is described by a config object (stored in the DB, editable via an
-admin UI later). Example shape:
+Each clinic is described by a config object that lives **in code per deployment**
+(`config/clinic.ts`), validated with Zod at load. One deployment = one clinic =
+one config. Example shape:
 
 ```ts
 clinic: {
@@ -50,19 +51,21 @@ schemas**, not hardcoded JSX.
 Build the form **engine** once; every clinic just supplies field definitions.
 This alone saves months across clinics and is a core differentiator.
 
-## Multi-tenancy
+## Tenancy: single-tenant per deployment
 
-- **One Supabase project (Tier 1)**, every table scoped by `clinic_id`.
-- **Row-Level Security (RLS) on every table**, enforced at the database — never
-  trust the app layer alone.
-- New clinic = a row + a config object, **not** a deploy.
-- Tier 2 (dedicated project per clinic) uses the same code with different env vars.
+- **One clinic per deployment**, with **its own Supabase project**. No
+  `clinic_id`, no cross-tenant queries, no shared multi-clinic database.
+- The database holds **only that clinic's data**, so isolation is total.
+- A new clinic = **edit the config + deploy a new instance**, not a DB row.
+- RLS is **role-based within the clinic** (patient vs doctor/staff via Supabase
+  Auth), not tenant-based. See [db/rls](../db/rls/README.md).
 
 ## Security & compliance (design early — painful to retrofit)
 
 Healthcare data is high-stakes even on a budget:
 
-- **RLS on every table**, scoped by `clinic_id`.
+- **Role-based RLS** (patient can see only their own records; staff per role),
+  enforced at the database — never trust the app layer alone.
 - **Audit logging** for any access to patient data (who saw what, when).
 - **No PHI** in logs, analytics, or long-lived client-side state.
 - Design for an eventual **HIPAA / GDPR** posture depending on region — costs

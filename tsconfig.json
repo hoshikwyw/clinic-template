@@ -20,10 +20,15 @@
     ],
     "paths": {
       "@/*": ["./*"],
+      "@ui": ["./packages/ui/index.ts"],
       "@ui/*": ["./packages/ui/*"],
+      "@config-engine": ["./packages/config-engine/index.ts"],
       "@config-engine/*": ["./packages/config-engine/*"],
+      "@form-engine": ["./packages/form-engine/index.ts"],
       "@form-engine/*": ["./packages/form-engine/*"],
+      "@auth": ["./packages/auth/index.ts"],
       "@auth/*": ["./packages/auth/*"],
+      "@native": ["./packages/native/index.ts"],
       "@native/*": ["./packages/native/*"],
       "@modules/*": ["./modules/*"],
       "@db/*": ["./db/*"]

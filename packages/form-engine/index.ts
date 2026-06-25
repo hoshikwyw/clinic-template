@@ -6,26 +6,18 @@
  * Zod schemas. Build the engine once; every clinic supplies field definitions.
  *
  * See docs/02-architecture.md ("Schema-driven forms").
- * NOTE: Phase 0 stub — implemented in Phase 1.
  */
 
-export type FieldType =
-  | "text"
-  | "number"
-  | "email"
-  | "phone"
-  | "date"
-  | "select"
-  | "checkbox"
-  | "textarea";
+export {
+  fieldTypeSchema,
+  fieldOptionSchema,
+  fieldDefinitionSchema,
+  formSchemaSchema,
+  buildZodSchema,
+  type FieldType,
+  type FieldOption,
+  type FieldDefinition,
+  type FormSchema,
+} from "./schema";
 
-export interface FieldDefinition {
-  name: string;
-  label: string;
-  type: FieldType;
-  required?: boolean;
-  options?: { label: string; value: string }[];
-  // validation, conditional visibility, etc. — Phase 1
-}
-
-export type FormSchema = FieldDefinition[];
+export { FormRenderer, type FormRendererProps } from "./form-renderer";

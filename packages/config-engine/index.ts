@@ -1,58 +1,47 @@
 /**
  * config-engine — the "brain" of the platform.
  *
- * Each clinic is described by a ClinicConfig object (stored in the DB, editable
- * via an admin UI later). The whole product is driven by this config:
- * branding, enabled modules, services, intake forms, booking rules.
+ * Validates and exposes a clinic's ClinicConfig. Pure layer: no DB / app deps,
+ * so it can be used anywhere (server, client, scripts). This deployment's active
+ * clinic config + loader live in config/clinic.ts (single-tenant).
  *
- * See docs/02-architecture.md ("Clinic Config (the brain)").
- * NOTE: Phase 0 stub — shapes will be fleshed out + validated with Zod in Phase 1.
+ * See docs/02-architecture.md.
  */
 
-export type ClinicSpecialty =
-  | "dental"
-  | "pediatric"
-  | "physio"
-  | "dermatology"
-  | "general"
-  | (string & {}); // allow custom specialties
+import {
+  clinicConfigSchema,
+  type ClinicConfig,
+  type ClinicConfigInput,
+  type ModuleKey,
+} from "./schema";
 
-export interface ClinicBranding {
-  name: string;
-  logoUrl?: string;
-  /** maps onto design tokens — see packages/ui */
-  colorScheme?: string;
-  font?: string;
+export * from "./schema";
+
+/**
+ * Author a clinic config with full type-checking + inference.
+ * Accepts the INPUT shape (fields with defaults are optional). Identity at
+ * runtime; validate + apply defaults with parseClinicConfig.
+ */
+export function defineClinicConfig(
+  config: ClinicConfigInput
+): ClinicConfigInput {
+  return config;
 }
 
-export interface ClinicLocale {
-  languages: string[];
-  defaultLang: string;
-  timezone: string;
-  currency: string;
+/** Validate unknown data into a ClinicConfig (throws on invalid). */
+export function parseClinicConfig(raw: unknown): ClinicConfig {
+  return clinicConfigSchema.parse(raw);
 }
 
-/** Toggleable feature modules — a clinic enables only what it needs. */
-export interface ClinicModules {
-  appointments: boolean;
-  patients: boolean;
-  scheduling: boolean;
-  notifications: boolean;
-  billing: boolean;
-  staff: boolean;
-  telehealth: boolean;
+/** Safe variant — returns a result object instead of throwing. */
+export function safeParseClinicConfig(raw: unknown) {
+  return clinicConfigSchema.safeParse(raw);
 }
 
-export interface ClinicConfig {
-  id: string;
-  branding: ClinicBranding;
-  locale: ClinicLocale;
-  specialty: ClinicSpecialty;
-  modules: ClinicModules;
-  // services, intakeForm, staffRoles, bookingRules — added in Phase 1
-}
-
-/** Phase 1: load a clinic's config by id / slug from the DB. */
-export async function loadClinicConfig(_clinicId: string): Promise<ClinicConfig> {
-  throw new Error("loadClinicConfig: not implemented (Phase 1)");
+/** Is a feature module enabled for this clinic? */
+export function isModuleEnabled(
+  config: ClinicConfig,
+  moduleKey: ModuleKey
+): boolean {
+  return config.modules[moduleKey] === true;
 }

@@ -27,9 +27,10 @@ Stand up the full pipeline end-to-end:
 - Clinic **config model + loader** (`packages/config-engine`)
 - **Schema-driven form engine** (`packages/form-engine`)
 - Branding / theming via **design tokens**
-- Multi-tenant **RLS**
 
-**Goal:** spin up a new (empty) clinic from config alone — **no code**.
+**Goal:** spin up a clinic from config alone — **no code**. (RLS arrives in
+Phase 2 with the first real tables; it's **role-based** within the clinic, not
+tenant-based.)
 
 ## Phase 2 — Core MVP modules
 
@@ -38,12 +39,12 @@ Stand up the full pipeline end-to-end:
 
 **Goal:** one pilot clinic actually books patients.
 
-## Phase 3 — Pilot with 2 contrasting clinics
+## Phase 3 — Prove reusability with 2 contrasting configs
 
-- Onboard **two different specialties** (e.g. dental + pediatric) on the **same
-  codebase**.
+- Configure **two different specialties** (e.g. dental + pediatric) from the
+  **same codebase** — each as its own config (and, when sold, its own deploy).
 - This is the real test of reusability — it exposes every hardcoded assumption.
-- **Fix the engine, not the clinics.**
+- **Fix the engine, not the configs.**
 
 **Goal:** prove reusability is real, not imaginary.
 
@@ -55,14 +56,15 @@ Stand up the full pipeline end-to-end:
 
 **Goal:** clinics self-describe; engineers stop being in the loop for setup.
 
-## Phase 5 — Scale & migration paths
+## Phase 5 — Scale & onboarding
 
-- Self-serve onboarding
-- **Tier-2** dedicated-instance path (per-clinic Supabase/deploy)
+- **Repeatable per-clinic provisioning** (templated deploy + Supabase per clinic)
+- Self-serve / fast onboarding of a new clinic from a config
 - Performance, deeper compliance
-- Per-client budget upgrades become **config switches**
+- (Optional, only if ever needed) a shared multi-tenant mode — the config-driven
+  design allows it without rewriting features
 
-**Goal:** scale to many clinics; budget upgrades are config, not rewrites.
+**Goal:** standing up a new clinic is fast and repeatable.
 
 ---
 

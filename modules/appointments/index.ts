@@ -5,7 +5,11 @@
  *
  * Toggleable via ClinicConfig.modules.appointments. Public API of the module is this file.
  * See docs/02-architecture.md ("Feature Modules") and docs/03-folder-structure.md.
- * NOTE: Phase 0 stub.
  */
 
-export {};
+export {
+  BookingWizard,
+  type BookingWizardProps,
+  type BookingService,
+} from "./components/booking-wizard";
+

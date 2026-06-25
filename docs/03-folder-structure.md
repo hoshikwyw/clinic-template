@@ -4,7 +4,7 @@
 clinic-platform/
 ├── app/                          # Next.js App Router
 │   ├── (public)/                 # SSR — marketing/landing, public booking (SEO)
-│   │   └── [clinic]/             #   tenant-scoped public pages
+│   │                             #   marketing + public booking pages
 │   ├── (app)/                    # CSR — PATIENT/STAFF app (patients, doctors, staff)
 │   │                             #   role-aware; Capacitor-packaged → Android + PWA
 │   ├── (admin)/                  # CSR — ADMIN DASHBOARD (clinic admin team)
@@ -41,7 +41,8 @@ clinic-platform/
 │
 ├── lib/                          # pure utils, adapters (storage, SMS, ...)
 ├── config/
-│   └── clinics/                  # per-clinic config (or seeded in DB)
+│   ├── clinic.ts                 # THIS deployment's active clinic config
+│   └── clinics/                  # example configs to copy from
 ├── locales/                      # i18n message files
 ├── tests/
 │
@@ -64,4 +65,6 @@ clinic-platform/
   and `lib` adapters isolate Supabase / Capacitor / SMS so migration is an
   adapter swap.
 - **`db/rls/` is first-class.** RLS policies live in the repo, versioned with
-  migrations — multi-tenancy is enforced at the database.
+  migrations — role-based access (patient vs staff) is enforced at the database.
+- **`config/clinic.ts` is the per-deployment clinic.** Single-tenant: one
+  deployment serves one clinic. Set up a new client by editing this config.

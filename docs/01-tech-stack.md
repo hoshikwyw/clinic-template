@@ -6,7 +6,7 @@ backend is **Supabase**.
 | Layer | Choice | Why |
 |---|---|---|
 | **Framework** | **Next.js (App Router) + TypeScript** | First-class on Vercel; SSR for SEO of public clinic pages; Server Actions cut API boilerplate |
-| **Backend / DB** | **Supabase** (Postgres + Auth + Storage + RLS) | One platform = auth + DB + file storage; RLS enforces multi-tenancy |
+| **Backend / DB** | **Supabase** (Postgres + Auth + Storage + RLS) | One platform = auth + DB + file storage; RLS enforces role-based access (patient vs staff). One Supabase project per clinic deployment |
 | **Data access** | **Drizzle ORM** | Type-safe, lightweight, migrations as code → portable if we ever leave Supabase |
 | **Styling** | **Tailwind CSS + shadcn/ui** | shadcn = we *own* the component code (not a locked dependency); accessible by default (Radix under the hood) |
 | **State / data fetching** | **TanStack Query** + React Server Components | Caching, optimistic updates for booking; offline tolerance |

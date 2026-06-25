@@ -21,12 +21,13 @@ Delivered as **two apps + a public site** from one codebase:
 
 ## The core strategic decision
 
-> **"Template" is a trap.** If we think "template," we copy-paste a repo per
-> clinic and drown in maintenance.
+> **Don't fork the repo per clinic.** Copy-pasting a codebase per client means
+> drowning in maintenance.
 
-Instead, this is a **single multi-tenant, configuration-driven product**:
+Instead, this is **one configuration-driven codebase** that we configure per
+clinic and deploy as that clinic's own instance:
 
-> **One codebase + one config layer = any clinic.**
+> **One codebase + one config = one clinic, ready to deploy.**
 
 - ~**80% core** is identical across all clinics: appointments, patients, staff,
   scheduling, notifications, billing.
@@ -36,19 +37,29 @@ Instead, this is a **single multi-tenant, configuration-driven product**:
 This single decision shapes the entire architecture (see
 [02 — Architecture](./02-architecture.md)).
 
-## Tenancy tiers (budget-driven delivery)
+## Tenancy: single-tenant per deployment
 
-We are a startup with limited budget for database and hosting. Deploy target is
-**Vercel + Supabase**. We design for the cheapest tier but keep migration easy.
+The product is sold **per clinic**. Each clinic gets **their own deployment**
+with **their own database** and **one config**:
 
-| Tier | Model | Cost | When |
-|---|---|---|---|
-| **Tier 1** (default) | Single codebase, **one Supabase project**, multi-tenant by `clinic_id` + Row-Level Security. New clinic = a row + config. | Lowest | Our default; most clinics |
-| **Tier 2** | Dedicated Supabase project / dedicated deploy per clinic. Same code, different env vars. | Higher | Clients who pay for isolation / compliance |
+| Per clinic sold | What they get |
+|---|---|
+| 1 deployment (Vercel) | their own app instance |
+| 1 database (Supabase) | their data only — fully isolated |
+| 1 clinic config (in code) | their branding, services, modules, intake form |
+| their own Admin Dashboard | run by **the clinic's** admin team |
 
-**Design for Tier 1. Keep the door open for Tier 2.** Moving a clinic from Tier 1
-to Tier 2 should be an env/config change, not a rewrite — that is our "easy
-migration" guarantee.
+- **No shared multi-clinic database.** No `clinic_id`, no cross-tenant queries.
+- **No vendor super-admin.** We don't run a dashboard over many clinics; each
+  clinic manages itself.
+- **Data isolation is total** — a clinic's data lives in its own Supabase
+  project, which is the simplest and strongest privacy posture.
+
+**Trade-off (accepted):** more deployments to provision as we grow (one per
+clinic) in exchange for far simpler code and complete isolation. Because the app
+is config-driven, the *same* code could later be pointed at a shared multi-tenant
+database if we ever need that — the config would just load from a row instead of
+a file. We are **not** building that now.
 
 ## What "easy migration" means concretely
 
@@ -65,5 +76,6 @@ migration" guarantee.
   is the baseline that makes the app usable for elderly patients.
 - **Mobile-first** responsive design — the app must look good and fit on every
   screen size.
-- **Multi-tenancy enforced at the database** (RLS), never trusting the app layer alone.
+- **Role-based access enforced at the database** (RLS — patient vs doctor/staff),
+  never trusting the app layer alone.
 - **No PHI in logs/analytics**; audit logging for patient-data access.

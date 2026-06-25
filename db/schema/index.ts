@@ -1,11 +1,13 @@
 /**
  * Drizzle schema barrel — every table is exported from here.
  *
- * Multi-tenancy: every tenant-scoped table carries `clinic_id`, and Row-Level
- * Security policies (db/rls/) enforce isolation at the database.
+ * Single-tenant per deployment: this database belongs to ONE clinic, so there
+ * is no `clinics` table and no clinic_id columns. Tables here hold that clinic's
+ * operational data (patients, appointments, …). RLS is role-based (patient vs
+ * doctor/staff via Supabase Auth), not tenant-based.
  *
- * NOTE: Phase 0 — no tables yet. The `clinics` table + core tables land in
- * Phase 1 alongside the config engine. See docs/02-architecture.md.
+ * See docs/02-architecture.md.
  */
 
-export {};
+export * from "./patients";
+export * from "./appointments";

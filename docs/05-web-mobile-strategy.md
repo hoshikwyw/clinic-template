@@ -55,8 +55,9 @@ found on Google). So we split by zone:
   service worker = app survives network blips. Design for "read works offline,
   writes queue."
 - **Safe areas / notches** — respect device safe-area insets.
-- **App-store assets** — icons, splash screens, store listings. Eventually part
-  of per-clinic config (Tier 2 clinics may want their own branded app).
+- **App-store assets** — icons, splash screens, store listings. Per-clinic
+  branding, since each clinic gets its own deployment (and can have its own
+  branded app).
 
 ## Vendor wrapping
 
@@ -68,10 +69,9 @@ Native features go through **`packages/native`** (our interface), so:
 
 Capacitor is a web-view wrapper — perfect for **content + forms + dashboards**
 apps, which is exactly what a clinic system is. It is **not** the choice for
-heavy native animation / 60fps gaming-grade UI. We don't need that. If a Tier-2
-client ever demands a fully native experience, that's a funded, separate
-decision — and our shared business logic (schemas, API layer, types) still
-carries over.
+heavy native animation / 60fps gaming-grade UI. We don't need that. If a client
+ever demands a fully native experience, that's a funded, separate decision — and
+our shared business logic (schemas, API layer, types) still carries over.
 
 ## Impact on phasing
 
