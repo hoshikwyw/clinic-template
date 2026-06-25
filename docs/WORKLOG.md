@@ -8,6 +8,63 @@
 
 ## 2026-06-25
 
+> Two sessions this date — newest first.
+
+### Session 2 — Phases 0, 1 & 2 build
+
+**Session focus:** Scaffolded the project and built straight through Phases 0–2 —
+a working clinic app: config-driven, books real appointments, patient + staff
+auth, and notifications.
+
+**Decisions made**
+- **Single-tenant confirmed**; the multi-clinic DB approach was built then
+  **reverted** (dropped the `clinics` table). Sample clinic = **Smile Dental**.
+- **Auth = email + password**; **guest booking allowed** (book with name + phone,
+  no account).
+- **Roles come from Supabase `app_metadata`** (admin-only/secure), not
+  user_metadata. `set-role` script bootstraps the first admin.
+- **Capacitor remote-URL pattern** for Android (online SaaS — keep SSR, don't
+  static-export).
+- **Next 16 specifics:** `middleware.ts` → `proxy.ts` (renamed convention).
+- **Git:** the user now handles all commits/pushes (Claude did the Phase 0
+  commit + initial push to github.com/hoshikwyw/clinic-template; Phases 1–2 left
+  uncommitted for the user).
+
+**Done / changed**
+- **Phase 0:** Next.js 16 + React 19 + TS + Tailwind v4 scaffold; full folder
+  structure (`modules/`, `packages/`, `db/`, `config/`, `locales/`); shadcn/ui +
+  design tokens + accessibility tokens (font-scale, high-contrast,
+  reduced-motion, safe-area); Drizzle + Supabase wiring; Capacitor config; en/my
+  i18n seed files. Committed + pushed.
+- **Phase 1:** `config-engine` (Zod `ClinicConfig`), `form-engine`
+  (schema-driven `FormRenderer` + `buildZodSchema`), theming
+  (`ClinicThemeProvider`), single active clinic (`config/clinic.ts`).
+- **Phase 2:** `patients` + `appointments` tables (role-based RLS) applied to
+  Supabase; timezone-aware slot generation; **booking wizard**
+  (service→time→details→intake→review→confirm); patient auth (signup/login/
+  logout) + session-aware `/portal` + "my appointments"; **staff dashboard**
+  `/admin` (confirm/cancel/complete, `requireStaff` guard, `set-role` script);
+  **notifications** (Resend/console email adapter, booking + status emails,
+  reminder cron `/api/cron/reminders` + `vercel.json`, `reminder_sent_at`).
+- Verified booking flow and reminders against the live Supabase DB.
+
+**Still open** (see 07-open-decisions.md)
+- #2 Mobile delivery (Capacitor chosen, PWA-first) · #3 Play Store now/later ·
+  #5 Compliance bar/region.
+- **Manual setup for the user:** disable Supabase "Confirm email" for smooth dev
+  login; switch `DATABASE_URL` to the **pooler (6543)** for Vercel runtime;
+  optionally set `RESEND_API_KEY`/`EMAIL_FROM` + `CRON_SECRET` to actually send
+  email (otherwise emails are console no-ops).
+
+**Next session should**
+- Start **Phase 3** (prove reusability: stand up the pediatric config as a
+  contrasting clinic, fix hardcoded assumptions), OR begin **Phase 4** modules
+  (billing/telehealth), OR wire the **i18n provider + language switcher** (en/my).
+
+---
+
+### Session 1 — Initial brainstorming & docs
+
 **Session focus:** Initial brainstorming — set the whole project direction before
 writing any code.
 
