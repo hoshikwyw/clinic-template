@@ -37,6 +37,8 @@ export const littleStarsPediatric = defineClinicConfig({
     { id: "sickvisit", name: "Sick Visit", durationMinutes: 30 },
     { id: "teleconsult", name: "Video Consultation", durationMinutes: 20 },
   ],
+  // Booking collects the guardian's name + phone (canonical contact, relabeled
+  // via bookingContact below). The intake holds the child's clinical details.
   intakeForm: [
     { name: "childName", label: "Child's full name", type: "text", required: true },
     {
@@ -45,13 +47,6 @@ export const littleStarsPediatric = defineClinicConfig({
       type: "date",
       required: true,
     },
-    {
-      name: "guardianName",
-      label: "Parent / guardian name",
-      type: "text",
-      required: true,
-    },
-    { name: "guardianPhone", label: "Guardian phone", type: "phone", required: true },
     {
       name: "weightKg",
       label: "Child's weight (kg)",
@@ -76,6 +71,19 @@ export const littleStarsPediatric = defineClinicConfig({
     leadTimeHours: 1,
     cancellationWindowHours: 12,
     maxPerDayPerPatient: 1,
+  },
+  businessHours: {
+    openDays: [1, 2, 3, 4, 5], // Mon–Fri
+    openTime: "08:30",
+    closeTime: "16:30",
+    slotMinutes: 20,
+    bookingHorizonDays: 21,
+  },
+  // Pediatric: book under the guardian; the child's details are in the intake.
+  bookingContact: {
+    nameLabel: "Parent / guardian name",
+    phoneLabel: "Guardian phone",
+    emailLabel: "Email (optional)",
   },
   staffRoles: ["pediatrician", "nurse", "receptionist"],
 });

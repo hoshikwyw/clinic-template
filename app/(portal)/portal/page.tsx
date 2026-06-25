@@ -5,7 +5,7 @@ import { getSessionUser } from "@auth";
 import { signOut } from "@auth/actions";
 import { BookingWizard } from "@modules/appointments";
 import { getMyAppointments } from "@modules/appointments/server/booking";
-import { ClinicThemeProvider } from "@ui";
+import type { FormSchema } from "@form-engine";
 import { Button } from "@ui/primitives/button";
 import {
   Card,
@@ -40,6 +40,28 @@ export default async function PortalHome() {
   const user = await getSessionUser();
   const appointments = user ? await getMyAppointments() : [];
 
+  // Canonical contact fields (names fixed; labels come from the clinic config).
+  const contactForm: FormSchema = [
+    {
+      name: "fullName",
+      label: config.bookingContact.nameLabel,
+      type: "text",
+      required: true,
+    },
+    {
+      name: "phone",
+      label: config.bookingContact.phoneLabel,
+      type: "phone",
+      required: true,
+    },
+    {
+      name: "email",
+      label: config.bookingContact.emailLabel,
+      type: "email",
+      required: false,
+    },
+  ];
+
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat("en-GB", {
       timeZone: config.locale.timezone,
@@ -51,7 +73,7 @@ export default async function PortalHome() {
     }).format(new Date(iso));
 
   return (
-    <ClinicThemeProvider branding={config.branding} className="space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-primary">
@@ -119,12 +141,13 @@ export default async function PortalHome() {
         <CardContent>
           <BookingWizard
             services={config.services}
+            contactForm={contactForm}
             intakeForm={config.intakeForm}
             timeZone={config.locale.timezone}
             currency={config.locale.currency}
           />
         </CardContent>
       </Card>
-    </ClinicThemeProvider>
+    </div>
   );
 }

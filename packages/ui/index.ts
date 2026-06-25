@@ -45,4 +45,6 @@ export {
   FormField,
   useFormField,
 } from "./primitives/form";
-export { ClinicThemeProvider, brandingToStyle } from "./theme/clinic-theme";
+export { ClinicThemeProvider } from "./theme/clinic-theme";
+export { brandingToStyle } from "./theme/branding";
+export { AccessibilityToolbar } from "./shell/accessibility-toolbar";

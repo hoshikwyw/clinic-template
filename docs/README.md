@@ -31,6 +31,7 @@ all clinic types (appointments, patients, staff, scheduling, notifications). The
 | [06 — Roadmap & Phases](./06-roadmap-phases.md) | Phase 0–5 delivery plan |
 | [07 — Open Decisions](./07-open-decisions.md) | Decisions still needed before / during build |
 | [08 — i18n & Languages](./08-i18n-languages.md) | Multilingual support — **English + Myanmar**, Myanmar Unicode caveats |
+| [SETUP](./SETUP.md) | **Hands-on checklist** — local dev, env, admin bootstrap, Vercel deploy |
 | [WORKLOG](./WORKLOG.md) | **Dated journal** — what we decided/did each day, newest first |
 
 ## Guiding principles (the short version)

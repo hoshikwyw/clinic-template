@@ -9,7 +9,8 @@ import { smileDental } from "./clinics/smile-dental";
  * — or point `activeClinic` at a different config file. No database needed for
  * the config; it's validated at load.
  *
- * Other files in config/clinics/ are example configs to copy from.
+ * Other files in config/clinics/ are example configs to copy from
+ * (e.g. little-stars-pediatric — verified to run on this same code in Phase 3).
  */
 const activeClinic = smileDental;
 

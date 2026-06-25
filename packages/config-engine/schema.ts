@@ -90,6 +90,19 @@ export const businessHoursSchema = z.object({
 });
 export type BusinessHours = z.infer<typeof businessHoursSchema>;
 
+/**
+ * Labels for the booking contact step. The canonical patient fields are always
+ * name + phone (+ optional email), but their labels vary by clinic — e.g. a
+ * pediatric clinic books under a "Parent / guardian" while the child's details
+ * go in the intake form.
+ */
+export const bookingContactSchema = z.object({
+  nameLabel: z.string().default("Full name"),
+  phoneLabel: z.string().default("Phone number"),
+  emailLabel: z.string().default("Email (optional)"),
+});
+export type BookingContact = z.infer<typeof bookingContactSchema>;
+
 export const clinicConfigSchema = z.object({
   id: z.string().min(1),
   /** URL-safe identifier, e.g. "smile-dental" */
@@ -103,6 +116,7 @@ export const clinicConfigSchema = z.object({
   intakeForm: formSchemaSchema.default([]),
   bookingRules: bookingRulesSchema,
   businessHours: businessHoursSchema.prefault({}),
+  bookingContact: bookingContactSchema.prefault({}),
   staffRoles: z.array(z.string()).default([]),
 });
 /** Output type (after parse — defaults applied). Use this everywhere downstream. */

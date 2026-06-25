@@ -26,21 +26,18 @@ export interface BookingService {
 
 export interface BookingWizardProps {
   services: BookingService[];
+  /** canonical contact fields (names must be fullName/phone/email); labels vary by clinic */
+  contactForm: FormSchema;
   intakeForm: FormSchema;
   timeZone: string;
   currency: string;
 }
 
-const CONTACT_SCHEMA: FormSchema = [
-  { name: "fullName", label: "Full name", type: "text", required: true },
-  { name: "phone", label: "Phone number", type: "phone", required: true },
-  { name: "email", label: "Email (optional)", type: "email", required: false },
-];
-
 type StepKey = "service" | "when" | "details" | "intake" | "review";
 
 export function BookingWizard({
   services,
+  contactForm,
   intakeForm,
   timeZone,
   currency,
@@ -277,7 +274,7 @@ export function BookingWizard({
       {step === "details" && (
         <div className="space-y-3">
           <FormRenderer
-            schema={CONTACT_SCHEMA}
+            schema={contactForm}
             defaultValues={contact ?? undefined}
             submitLabel="Continue"
             onSubmit={(values) => {
