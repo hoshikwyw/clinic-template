@@ -1,0 +1,21 @@
+{
+  "common": {
+    "appName": "Clinic Platform",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "next": "Next",
+    "back": "Back",
+    "confirm": "Confirm"
+  },
+  "nav": {
+    "home": "Home",
+    "appointments": "Appointments",
+    "profile": "Profile"
+  },
+  "booking": {
+    "pickService": "Choose a service",
+    "pickTime": "Choose a time",
+    "confirm": "Confirm booking"
+  }
+}
