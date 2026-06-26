@@ -28,28 +28,79 @@ export default async function PublicHome() {
   const tset = await getTranslations("settings");
   const th = await getTranslations("help");
   const dayNames = t.raw("dayNames") as string[];
+  const brandInitial = (branding.shortName ?? branding.name)
+    .trim()
+    .charAt(0)
+    .toUpperCase();
   const hours = `${formatOpenDays(businessHours.openDays, dayNames)} · ${businessHours.openTime}–${businessHours.closeTime}`;
+
+  // Map: prefer precise coordinates, else geocode the address. No API key needed.
+  const mapQuery = contact?.coordinates
+    ? `${contact.coordinates.lat},${contact.coordinates.lng}`
+    : contact?.address;
+  const mapEmbedSrc = mapQuery
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`
+    : null;
+  const mapLink = mapQuery
+    ? `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}`
+    : null;
 
   return (
     <main className="w-full">
       {/* Top bar */}
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4">
-          <span className="font-semibold text-primary">
-            {branding.shortName ?? branding.name}
-          </span>
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+              {brandInitial}
+            </span>
+            <span className="font-semibold">
+              {branding.shortName ?? branding.name}
+            </span>
+          </Link>
+
+          {/* Section nav (desktop) */}
+          <nav className="hidden items-center gap-6 text-sm md:flex">
+            <a
+              href="#services"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t("servicesTitle")}
+            </a>
+            {doctors.length > 0 && (
+              <a
+                href="#team"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("teamTitle")}
+              </a>
+            )}
+            <a
+              href="#contact"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {t("contactTitle")}
+            </a>
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline"
+            >
+              {t("logIn")}
+            </Link>
+            <Link href="/book">
+              <Button size="sm">{t("book")}</Button>
+            </Link>
             <Link
               href="/settings"
               aria-label={tset("title")}
-              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <Settings className="size-5" aria-hidden />
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" size="sm">
-                {t("logIn")}
-              </Button>
+              <Settings className="size-4" aria-hidden />
             </Link>
           </div>
         </div>
@@ -99,7 +150,10 @@ export default async function PublicHome() {
       )}
 
       {/* Services */}
-      <section className="mx-auto max-w-5xl px-5 py-14">
+      <section
+        id="services"
+        className="mx-auto max-w-5xl scroll-mt-20 px-5 py-14"
+      >
         <h2 className="text-center text-2xl font-bold tracking-tight">
           {t("servicesTitle")}
         </h2>
@@ -125,7 +179,7 @@ export default async function PublicHome() {
 
       {/* Team */}
       {doctors.length > 0 && (
-        <section className="bg-muted/40">
+        <section id="team" className="scroll-mt-20 bg-muted/40">
           <div className="mx-auto max-w-5xl px-5 py-14">
             <h2 className="text-center text-2xl font-bold tracking-tight">
               {t("teamTitle")}
@@ -156,43 +210,72 @@ export default async function PublicHome() {
       )}
 
       {/* Visit / contact */}
-      <section className="mx-auto max-w-5xl px-5 py-14">
+      <section
+        id="contact"
+        className="mx-auto max-w-5xl scroll-mt-20 px-5 py-14"
+      >
         <h2 className="text-center text-2xl font-bold tracking-tight">
           {t("contactTitle")}
         </h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border p-5">
-            <div className="flex items-center gap-2 font-semibold">
-              <Clock className="size-4 text-primary" aria-hidden />
-              {t("hoursTitle")}
+        <div className="mt-8 grid items-stretch gap-4 lg:grid-cols-2">
+          {/* Hours + contact details */}
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border p-5">
+              <div className="flex items-center gap-2 font-semibold">
+                <Clock className="size-4 text-primary" aria-hidden />
+                {t("hoursTitle")}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{hours}</p>
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">{hours}</p>
+            {contact && (contact.phone || contact.email || contact.address) && (
+              <div className="space-y-2 rounded-2xl border border-border p-5 text-sm">
+                {contact.phone && (
+                  <a
+                    href={`tel:${contact.phone.replace(/\s+/g, "")}`}
+                    className="flex items-center gap-2 hover:text-primary"
+                  >
+                    <Phone className="size-4 text-primary" aria-hidden />
+                    {contact.phone}
+                  </a>
+                )}
+                {contact.email && (
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="flex items-center gap-2 hover:text-primary"
+                  >
+                    <Mail className="size-4 text-primary" aria-hidden />
+                    {contact.email}
+                  </a>
+                )}
+                {contact.address && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="size-4 text-primary" aria-hidden />
+                    {contact.address}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          {contact && (contact.phone || contact.email || contact.address) && (
-            <div className="space-y-2 rounded-2xl border border-border p-5 text-sm">
-              {contact.phone && (
+
+          {/* Map */}
+          {mapEmbedSrc && (
+            <div className="flex min-h-64 flex-col gap-2">
+              <iframe
+                title={t("mapTitle")}
+                src={mapEmbedSrc}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="w-full flex-1 rounded-2xl border border-border"
+              />
+              {mapLink && (
                 <a
-                  href={`tel:${contact.phone.replace(/\s+/g, "")}`}
-                  className="flex items-center gap-2 hover:text-primary"
+                  href={mapLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:underline"
                 >
-                  <Phone className="size-4 text-primary" aria-hidden />
-                  {contact.phone}
+                  {t("directions")} →
                 </a>
-              )}
-              {contact.email && (
-                <a
-                  href={`mailto:${contact.email}`}
-                  className="flex items-center gap-2 hover:text-primary"
-                >
-                  <Mail className="size-4 text-primary" aria-hidden />
-                  {contact.email}
-                </a>
-              )}
-              {contact.address && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="size-4 text-primary" aria-hidden />
-                  {contact.address}
-                </div>
               )}
             </div>
           )}

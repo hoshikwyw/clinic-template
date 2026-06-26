@@ -105,11 +105,13 @@ export const bookingContactSchema = z.object({
 });
 export type BookingContact = z.infer<typeof bookingContactSchema>;
 
-/** Clinic contact details, shown on the help/contact page. */
+/** Clinic contact details, shown on the help/contact page + landing map. */
 export const contactInfoSchema = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   address: z.string().optional(),
+  /** precise map pin; if omitted, the map falls back to geocoding `address` */
+  coordinates: z.object({ lat: z.number(), lng: z.number() }).optional(),
 });
 export type ContactInfo = z.infer<typeof contactInfoSchema>;
 

@@ -100,6 +100,7 @@ export const smileDental = defineClinicConfig({
     phone: "+95 9 123 456 789",
     email: "hello@smiledental.example",
     address: "No. 12, Dental Street, Yangon",
+    coordinates: { lat: 16.8409, lng: 96.1735 }, // central Yangon
   },
   faq: [
     {
