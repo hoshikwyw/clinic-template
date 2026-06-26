@@ -10,6 +10,7 @@ import {
   updateAppointmentStatus,
 } from "@modules/appointments/server/admin";
 import { meetingUrl, isJoinable } from "@modules/telehealth";
+import { AdminRescheduleControl } from "./reschedule-control";
 import { Button } from "@ui/primitives/button";
 import {
   Card,
@@ -160,9 +161,10 @@ export default async function AdminHome() {
           {appointments.map((a) => (
             <div
               key={a.id}
-              className="flex flex-col gap-3 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="space-y-3 rounded-xl border border-border p-4"
             >
-              <div className="space-y-0.5 text-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-0.5 text-sm">
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/admin/patients/${a.patientId}`}
@@ -237,6 +239,15 @@ export default async function AdminHome() {
                   {t("cancel")}
                 </Button>
               </form>
+              </div>
+              {(a.status === "pending" || a.status === "confirmed") && (
+                <div className="border-t border-border pt-3">
+                  <AdminRescheduleControl
+                    appointmentId={a.id}
+                    serviceId={a.serviceId}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </CardContent>

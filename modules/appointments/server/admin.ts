@@ -6,7 +6,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { requireStaff } from "@auth";
+import { getClinicConfig } from "@/config/clinic";
 import { notifyAppointmentStatus } from "@modules/notifications";
+import { getAvailableSlots } from "./booking";
 
 /**
  * Staff-only appointment management. Every action calls requireStaff(), which
@@ -101,4 +103,59 @@ export async function updateAppointmentStatus(
   }
 
   revalidatePath("/admin");
+}
+
+export interface AdminRescheduleResult {
+  ok: boolean;
+  error?: "notFound" | "unavailable" | "invalid";
+}
+
+/**
+ * Staff reschedule an appointment to a new slot (e.g. for a phone booking).
+ * Validates the new slot is available for the service; resets to pending +
+ * clears the reminder so the new time is re-confirmed and re-reminded.
+ */
+export async function rescheduleAppointment(
+  appointmentId: string,
+  startIso: string
+): Promise<AdminRescheduleResult> {
+  await requireStaff();
+
+  const [row] = await db
+    .select({
+      id: appointments.id,
+      serviceId: appointments.serviceId,
+    })
+    .from(appointments)
+    .where(eq(appointments.id, appointmentId))
+    .limit(1);
+  if (!row) return { ok: false, error: "notFound" };
+
+  const service = getClinicConfig().services.find(
+    (s) => s.id === row.serviceId
+  );
+  if (!service) return { ok: false, error: "invalid" };
+
+  const days = await getAvailableSlots(row.serviceId);
+  const available = days.some((d) =>
+    d.slots.some((s) => s.startIso === startIso)
+  );
+  if (!available) return { ok: false, error: "unavailable" };
+
+  const newStart = new Date(startIso);
+  const newEnd = new Date(newStart.getTime() + service.durationMinutes * 60_000);
+
+  await db
+    .update(appointments)
+    .set({
+      startAt: newStart,
+      endAt: newEnd,
+      status: "pending",
+      reminderSentAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(appointments.id, appointmentId));
+
+  revalidatePath("/admin");
+  return { ok: true };
 }
