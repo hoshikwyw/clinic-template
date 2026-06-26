@@ -46,6 +46,52 @@
     "staffTitle": "Staff login",
     "staffSubtitle": "For clinic staff and administrators."
   },
+  "validation": {
+    "required": "{label} is required",
+    "email": "{label} must be a valid email",
+    "min": "{label} must be ≥ {min}",
+    "max": "{label} must be ≤ {max}",
+    "passwordMin": "{label} must be at least {min} characters"
+  },
+  "public": {
+    "logIn": "Log in",
+    "clinicSuffix": "clinic",
+    "heroSubtitle": "Book an appointment online in under a minute — no account needed.",
+    "bookCta": "Book an appointment",
+    "servicesTitle": "Our services",
+    "hoursTitle": "Opening hours",
+    "minUnit": "min",
+    "dayNames": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  },
+  "a11y": {
+    "options": "Accessibility options",
+    "textSize": "Text size",
+    "sizeNormal": "Normal text size",
+    "sizeLarge": "Large text size",
+    "sizeXl": "Extra-large text size",
+    "highContrast": "High contrast"
+  },
+  "admin": {
+    "dashboard": "Admin Dashboard",
+    "title": "Appointments",
+    "signedInAs": "{clinic} · signed in as {email}",
+    "signOut": "Sign out",
+    "notAuthorized": "Not authorized",
+    "notAuthorizedBody": "This area is for clinic staff. You're signed in as {email}.",
+    "allAppointments": "All appointments ({count})",
+    "newestFirst": "Newest first.",
+    "noAppointments": "No appointments yet.",
+    "tryBooking": "Try booking one",
+    "confirm": "Confirm",
+    "complete": "Complete",
+    "cancel": "Cancel"
+  },
+  "status": {
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
   "booking": {
     "stepService": "Choose a service",
     "stepWhen": "Pick a time",

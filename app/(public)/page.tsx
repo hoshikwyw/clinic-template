@@ -1,11 +1,10 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { AccessibilityToolbar } from "@ui";
 import { Button } from "@ui/primitives/button";
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function formatOpenDays(days: number[]): string {
+function formatOpenDays(days: number[], dayNames: string[]): string {
   const sorted = [...days].sort((a, b) => a - b);
   // Compact consecutive runs into ranges, e.g. [1,2,3,4,5] -> "Mon–Fri".
   const parts: string[] = [];
@@ -18,8 +17,8 @@ function formatOpenDays(days: number[]): string {
     }
     parts.push(
       start === prev
-        ? DAY_NAMES[start]
-        : `${DAY_NAMES[start]}–${DAY_NAMES[prev]}`
+        ? dayNames[start]
+        : `${dayNames[start]}–${dayNames[prev]}`
     );
     start = sorted[i];
     prev = sorted[i];
@@ -31,9 +30,11 @@ function formatOpenDays(days: number[]): string {
  * Public site — "/" (SSR, SEO). A real, branded clinic homepage built entirely
  * from the clinic config. Branding colors are applied globally (root layout).
  */
-export default function PublicHome() {
+export default async function PublicHome() {
   const config = getClinicConfig();
   const { branding, services, businessHours, locale, specialty } = config;
+  const t = await getTranslations("public");
+  const dayNames = t.raw("dayNames") as string[];
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 pb-16">
@@ -48,7 +49,7 @@ export default function PublicHome() {
             href="/login"
             className="text-sm font-medium underline-offset-4 hover:underline"
           >
-            Log in
+            {t("logIn")}
           </Link>
         </div>
       </div>
@@ -56,18 +57,18 @@ export default function PublicHome() {
       {/* Hero */}
       <section className="space-y-5 py-10 text-center sm:py-16">
         <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          {specialty} clinic
+          {specialty} {t("clinicSuffix")}
         </p>
         <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-5xl">
           {branding.name}
         </h1>
         <p className="mx-auto max-w-md text-lg text-muted-foreground">
-          Book an appointment online in under a minute — no account needed.
+          {t("heroSubtitle")}
         </p>
         <div className="flex justify-center pt-2">
           <Link href="/portal">
             <Button size="lg" className="min-h-12 px-8 text-base">
-              Book an appointment
+              {t("bookCta")}
             </Button>
           </Link>
         </div>
@@ -75,7 +76,7 @@ export default function PublicHome() {
 
       {/* Services */}
       <section className="space-y-4 py-8">
-        <h2 className="text-xl font-semibold">Our services</h2>
+        <h2 className="text-xl font-semibold">{t("servicesTitle")}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {services.map((s) => (
             <div
@@ -84,7 +85,7 @@ export default function PublicHome() {
             >
               <div className="font-medium">{s.name}</div>
               <div className="text-sm text-muted-foreground">
-                {s.durationMinutes} min
+                {s.durationMinutes} {t("minUnit")}
                 {s.price
                   ? ` · ${s.price.toLocaleString()} ${locale.currency}`
                   : ""}
@@ -96,9 +97,9 @@ export default function PublicHome() {
 
       {/* Hours */}
       <section className="space-y-2 py-8">
-        <h2 className="text-xl font-semibold">Opening hours</h2>
+        <h2 className="text-xl font-semibold">{t("hoursTitle")}</h2>
         <p className="text-muted-foreground">
-          {formatOpenDays(businessHours.openDays)} ·{" "}
+          {formatOpenDays(businessHours.openDays, dayNames)} ·{" "}
           {businessHours.openTime}–{businessHours.closeTime}
         </p>
       </section>

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Contrast } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,13 +15,14 @@ import { cn } from "@/lib/utils";
  */
 type Scale = "base" | "lg" | "xl";
 
-const SIZES: { value: Scale; label: string; title: string }[] = [
-  { value: "base", label: "A", title: "Normal text size" },
-  { value: "lg", label: "A+", title: "Large text size" },
-  { value: "xl", label: "A++", title: "Extra-large text size" },
+const SIZES: { value: Scale; label: string; titleKey: string }[] = [
+  { value: "base", label: "A", titleKey: "sizeNormal" },
+  { value: "lg", label: "A+", titleKey: "sizeLarge" },
+  { value: "xl", label: "A++", titleKey: "sizeXl" },
 ];
 
 export function AccessibilityToolbar({ className }: { className?: string }) {
+  const t = useTranslations("a11y");
   const [scale, setScale] = React.useState<Scale>("base");
   const [contrast, setContrast] = React.useState(false);
 
@@ -65,15 +67,15 @@ export function AccessibilityToolbar({ className }: { className?: string }) {
   return (
     <div
       role="group"
-      aria-label="Accessibility options"
+      aria-label={t("options")}
       className={cn("flex items-center gap-1", className)}
     >
-      <span className="sr-only">Text size</span>
+      <span className="sr-only">{t("textSize")}</span>
       {SIZES.map((s) => (
         <button
           key={s.value}
           type="button"
-          title={s.title}
+          title={t(s.titleKey)}
           aria-pressed={scale === s.value}
           onClick={() => applyScale(s.value)}
           className={btn(scale === s.value)}
@@ -83,13 +85,13 @@ export function AccessibilityToolbar({ className }: { className?: string }) {
       ))}
       <button
         type="button"
-        title="High contrast"
+        title={t("highContrast")}
         aria-pressed={contrast}
         onClick={toggleContrast}
         className={cn(btn(contrast), "ml-1")}
       >
         <Contrast className="size-4" aria-hidden />
-        <span className="sr-only">High contrast</span>
+        <span className="sr-only">{t("highContrast")}</span>
       </button>
     </div>
   );

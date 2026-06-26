@@ -8,6 +8,7 @@ import {
   type Resolver,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@ui/primitives/button";
 import { Input } from "@ui/primitives/input";
@@ -60,7 +61,11 @@ export function FormRenderer({
   submitLabel = "Submit",
   defaultValues,
 }: FormRendererProps) {
-  const zodSchema = React.useMemo(() => buildZodSchema(schema), [schema]);
+  const tv = useTranslations("validation");
+  const zodSchema = React.useMemo(
+    () => buildZodSchema(schema, (key, values) => tv(key, values)),
+    [schema, tv]
+  );
 
   // Cast bridges a known @hookform/resolvers <-> Zod 4 internal type skew
   // (duplicate zod type versions in the tree); correct at runtime.

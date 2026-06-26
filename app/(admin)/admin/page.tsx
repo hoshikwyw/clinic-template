@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser, isStaff } from "@auth";
 import { signOut } from "@auth/actions";
@@ -29,7 +30,7 @@ async function changeStatus(formData: FormData) {
   await updateAppointmentStatus(id, status);
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, label }: { status: string; label: string }) {
   const styles: Record<string, string> = {
     pending: "bg-muted text-muted-foreground",
     confirmed: "bg-primary/10 text-primary",
@@ -38,26 +39,27 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span className={`rounded-md px-2 py-0.5 text-xs ${styles[status] ?? ""}`}>
-      {status}
+      {label}
     </span>
   );
 }
 
 export default async function AdminHome() {
+  const t = await getTranslations("admin");
+  const ts = await getTranslations("status");
   const user = await getSessionUser();
   if (!user) redirect("/admin/login");
 
   if (!isStaff(user.role)) {
     return (
       <div className="mx-auto max-w-md space-y-3 py-10 text-center">
-        <h1 className="text-xl font-semibold">Not authorized</h1>
+        <h1 className="text-xl font-semibold">{t("notAuthorized")}</h1>
         <p className="text-sm text-muted-foreground">
-          This area is for clinic staff. You&apos;re signed in as{" "}
-          {user.email}.
+          {t("notAuthorizedBody", { email: user.email })}
         </p>
         <form action={handleSignOut}>
           <Button type="submit" variant="outline" size="sm">
-            Sign out
+            {t("signOut")}
           </Button>
         </form>
       </div>
@@ -81,14 +83,17 @@ export default async function AdminHome() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Appointments</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {config.branding.name} · signed in as {user.email}
+            {t("signedInAs", {
+              clinic: config.branding.name,
+              email: user.email,
+            })}
           </p>
         </div>
         <form action={handleSignOut}>
           <Button type="submit" variant="outline" size="sm">
-            Sign out
+            {t("signOut")}
           </Button>
         </form>
       </header>
@@ -96,16 +101,16 @@ export default async function AdminHome() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            All appointments ({appointments.length})
+            {t("allAppointments", { count: appointments.length })}
           </CardTitle>
-          <CardDescription>Newest first.</CardDescription>
+          <CardDescription>{t("newestFirst")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {appointments.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              No appointments yet.{" "}
+              {t("noAppointments")}{" "}
               <Link href="/portal" className="underline">
-                Try booking one
+                {t("tryBooking")}
               </Link>
               .
             </p>
@@ -118,7 +123,7 @@ export default async function AdminHome() {
               <div className="space-y-0.5 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{a.patientName}</span>
-                  <StatusBadge status={a.status} />
+                  <StatusBadge status={a.status} label={ts(a.status)} />
                 </div>
                 <div className="text-muted-foreground">
                   {a.serviceName} · {fmt(a.startIso)}
@@ -134,7 +139,7 @@ export default async function AdminHome() {
                   size="sm"
                   disabled={a.status === "confirmed"}
                 >
-                  Confirm
+                  {t("confirm")}
                 </Button>
                 <Button
                   type="submit"
@@ -144,7 +149,7 @@ export default async function AdminHome() {
                   variant="outline"
                   disabled={a.status === "completed"}
                 >
-                  Complete
+                  {t("complete")}
                 </Button>
                 <Button
                   type="submit"
@@ -154,7 +159,7 @@ export default async function AdminHome() {
                   variant="ghost"
                   disabled={a.status === "cancelled"}
                 >
-                  Cancel
+                  {t("cancel")}
                 </Button>
               </form>
             </div>
