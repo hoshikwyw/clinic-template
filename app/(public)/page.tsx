@@ -2,29 +2,8 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
+import { formatOpenDays } from "@/lib/hours";
 import { Button } from "@ui/primitives/button";
-
-function formatOpenDays(days: number[], dayNames: string[]): string {
-  const sorted = [...days].sort((a, b) => a - b);
-  // Compact consecutive runs into ranges, e.g. [1,2,3,4,5] -> "Mon–Fri".
-  const parts: string[] = [];
-  let start = sorted[0];
-  let prev = sorted[0];
-  for (let i = 1; i <= sorted.length; i++) {
-    if (sorted[i] === prev + 1) {
-      prev = sorted[i];
-      continue;
-    }
-    parts.push(
-      start === prev
-        ? dayNames[start]
-        : `${dayNames[start]}–${dayNames[prev]}`
-    );
-    start = sorted[i];
-    prev = sorted[i];
-  }
-  return parts.join(", ");
-}
 
 /**
  * Public site — "/" (SSR, SEO). A real, branded clinic homepage built entirely
@@ -35,6 +14,7 @@ export default async function PublicHome() {
   const { branding, services, businessHours, locale, specialty } = config;
   const t = await getTranslations("public");
   const tset = await getTranslations("settings");
+  const th = await getTranslations("help");
   const dayNames = t.raw("dayNames") as string[];
 
   return (
@@ -110,6 +90,12 @@ export default async function PublicHome() {
           {businessHours.openTime}–{businessHours.closeTime}
         </p>
       </section>
+
+      <footer className="border-t border-border py-6 text-sm">
+        <Link href="/help" className="text-primary hover:underline">
+          {th("title")}
+        </Link>
+      </footer>
     </main>
   );
 }

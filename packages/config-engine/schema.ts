@@ -105,6 +105,21 @@ export const bookingContactSchema = z.object({
 });
 export type BookingContact = z.infer<typeof bookingContactSchema>;
 
+/** Clinic contact details, shown on the help/contact page. */
+export const contactInfoSchema = z.object({
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  address: z.string().optional(),
+});
+export type ContactInfo = z.infer<typeof contactInfoSchema>;
+
+/** A help-center FAQ entry (clinic-authored). */
+export const faqItemSchema = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+});
+export type FaqItem = z.infer<typeof faqItemSchema>;
+
 export const clinicConfigSchema = z.object({
   id: z.string().min(1),
   /** URL-safe identifier, e.g. "smile-dental" */
@@ -119,6 +134,9 @@ export const clinicConfigSchema = z.object({
   bookingRules: bookingRulesSchema,
   businessHours: businessHoursSchema.prefault({}),
   bookingContact: bookingContactSchema.prefault({}),
+  /** help-center contact details + FAQ (optional, clinic-authored) */
+  contact: contactInfoSchema.optional(),
+  faq: z.array(faqItemSchema).default([]),
   staffRoles: z.array(z.string()).default([]),
 });
 /** Output type (after parse — defaults applied). Use this everywhere downstream. */

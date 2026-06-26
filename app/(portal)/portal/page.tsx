@@ -32,6 +32,7 @@ export default async function PortalHome() {
   const t = await getTranslations("portal");
   const ts = await getTranslations("status");
   const tb = await getTranslations("booking");
+  const th = await getTranslations("help");
   const locale = await getLocale();
   const user = await getSessionUser();
   const appointments = user ? await getMyAppointments() : [];
@@ -159,6 +160,22 @@ export default async function PortalHome() {
           ))}
         </div>
       </section>
+
+      {/* Help */}
+      <Link
+        href="/help"
+        className="flex items-center justify-between gap-4 rounded-xl border border-border p-4 transition-colors hover:border-primary"
+      >
+        <div>
+          <div className="font-medium">{th("needHelp")}</div>
+          <div className="text-sm text-muted-foreground">
+            {th("needHelpSub")}
+          </div>
+        </div>
+        <span aria-hidden className="text-primary">
+          →
+        </span>
+      </Link>
     </div>
   );
 }

@@ -75,5 +75,32 @@ export const smileDental = defineClinicConfig({
     slotMinutes: 30,
     bookingHorizonDays: 30,
   },
+  contact: {
+    phone: "+95 9 123 456 789",
+    email: "hello@smiledental.example",
+    address: "No. 12, Dental Street, Yangon",
+  },
+  faq: [
+    {
+      question: "Do I need an account to book?",
+      answer:
+        "No — you can book as a guest with just your name and phone number. Creating an account lets you view and manage your appointments.",
+    },
+    {
+      question: "How do I cancel or reschedule?",
+      answer:
+        "Log in, open ‘Appointments’, and use Reschedule or Cancel. Changes must be made at least 24 hours before your appointment; after that, please call us.",
+    },
+    {
+      question: "What should I bring to my visit?",
+      answer:
+        "Please arrive 10 minutes early with any previous dental records and a list of medications you take.",
+    },
+    {
+      question: "Do you accept walk-ins?",
+      answer:
+        "We prioritise booked appointments, but we do our best to accommodate walk-ins when the schedule allows.",
+    },
+  ],
   staffRoles: ["dentist", "hygienist", "receptionist"],
 });

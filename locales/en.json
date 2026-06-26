@@ -111,6 +111,19 @@
     "textSize": "Text size",
     "highContrast": "High contrast"
   },
+  "help": {
+    "title": "Help & FAQ",
+    "subtitle": "Common questions and how to reach us.",
+    "contact": "Contact",
+    "call": "Call us",
+    "email": "Email us",
+    "address": "Address",
+    "hours": "Opening hours",
+    "faq": "Frequently asked questions",
+    "noFaq": "No FAQs yet — contact us and we'll help.",
+    "needHelp": "Need help?",
+    "needHelpSub": "FAQs, contact details, and opening hours"
+  },
   "admin": {
     "dashboard": "Admin Dashboard",
     "title": "Appointments",
