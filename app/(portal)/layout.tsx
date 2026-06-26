@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { Settings } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
-import { AccessibilityToolbar, LanguageSwitcher } from "@ui";
 import { PortalNav } from "./portal-nav";
 
 /**
@@ -10,15 +11,16 @@ import { PortalNav } from "./portal-nav";
  * This is the ONE role-aware app (patient vs doctor vs staff views gated by
  * role + RLS). It is the zone Capacitor packages into Android + PWA.
  *
- * Mobile-first, WCAG 2.1 AA. The accessibility toolbar (text size + contrast)
- * lives here so it's reachable from every patient screen. Logged-in patients
- * get the bottom nav (Home / Appointments / Profile). See docs/04-ui-ux-system.md.
+ * Mobile-first, WCAG 2.1 AA. Logged-in patients get the bottom nav
+ * (Home / Appointments / Profile / Settings); guests get a Settings link in the
+ * header. See docs/04-ui-ux-system.md.
  */
 export default async function PortalLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const config = getClinicConfig();
   const user = await getSessionUser();
+  const t = await getTranslations("settings");
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -30,10 +32,16 @@ export default async function PortalLayout({
         >
           {config.branding.shortName ?? config.branding.name}
         </Link>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher languages={config.locale.languages} />
-          <AccessibilityToolbar />
-        </div>
+        {/* Logged-in users reach Settings via the bottom nav; guests need it here. */}
+        {!user && (
+          <Link
+            href="/settings"
+            aria-label={t("title")}
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Settings className="size-5" aria-hidden />
+          </Link>
+        )}
       </header>
       <main
         className={`mx-auto w-full max-w-2xl flex-1 p-4 ${user ? "pb-24" : ""}`}

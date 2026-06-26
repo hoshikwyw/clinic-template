@@ -11,7 +11,8 @@
   "nav": {
     "home": "Home",
     "appointments": "Appointments",
-    "profile": "Profile"
+    "profile": "Profile",
+    "settings": "Settings"
   },
   "appointments": {
     "title": "My appointments",
@@ -22,7 +23,14 @@
     "cancel": "Cancel",
     "cancelling": "Cancelling…",
     "cancelWindow": "Too late to cancel online — please call the clinic.",
-    "cancelFailed": "Could not cancel. Please try again."
+    "cancelFailed": "Could not cancel. Please try again.",
+    "reschedule": "Reschedule",
+    "chooseNewTime": "Choose a new time",
+    "confirmReschedule": "Confirm new time",
+    "rescheduling": "Rescheduling…",
+    "rescheduleFailed": "Could not reschedule. Please try again.",
+    "finding": "Finding times…",
+    "noTimes": "No available times."
   },
   "profile": {
     "title": "My profile",
@@ -46,7 +54,13 @@
     "apptNewest": "Newest first.",
     "bookTitle": "Book an appointment",
     "bookDescUser": "Booked under your account.",
-    "bookDescGuest": "No account needed — or log in to track your visits."
+    "bookDescGuest": "No account needed — or log in to track your visits.",
+    "book": "Book an appointment",
+    "bookCtaSub": "Pick a service and time in under a minute.",
+    "nextAppt": "Your next appointment",
+    "noUpcoming": "No upcoming appointments",
+    "viewAll": "View all",
+    "ourServices": "Our services"
   },
   "auth": {
     "email": "Email",
@@ -69,6 +83,11 @@
     "staffTitle": "Staff login",
     "staffSubtitle": "For clinic staff and administrators."
   },
+  "telehealth": {
+    "join": "Join video call",
+    "video": "Video consultation",
+    "opensSoon": "The join link opens 10 minutes before your appointment."
+  },
   "validation": {
     "required": "{label} is required",
     "email": "{label} must be a valid email",
@@ -86,12 +105,10 @@
     "minUnit": "min",
     "dayNames": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   },
-  "a11y": {
-    "options": "Accessibility options",
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
     "textSize": "Text size",
-    "sizeNormal": "Normal text size",
-    "sizeLarge": "Large text size",
-    "sizeXl": "Extra-large text size",
     "highContrast": "High contrast"
   },
   "admin": {
@@ -135,6 +152,27 @@
     "hasAccount": "Registered",
     "guest": "Guest",
     "back": "Patients"
+  },
+  "adminStaff": {
+    "navStaff": "Staff",
+    "title": "Staff & roles",
+    "subtitle": "Assign roles to your team. Members must sign up first.",
+    "addTitle": "Add a team member",
+    "emailPlaceholder": "their@email.com",
+    "add": "Add",
+    "none": "No staff yet.",
+    "you": "(you)",
+    "update": "Update",
+    "roleAdmin": "Admin",
+    "roleDoctor": "Doctor",
+    "roleStaff": "Staff",
+    "rolePatient": "Patient (remove)",
+    "added": "Role assigned.",
+    "updated": "Role updated.",
+    "errNotFound": "No user with that email. They must sign up first.",
+    "errSelfDemote": "You can't change your own admin role.",
+    "errInvalid": "Invalid role.",
+    "errFailed": "Something went wrong. Try again."
   },
   "email": {
     "automatedFooter": "This is an automated message from {clinic}.",

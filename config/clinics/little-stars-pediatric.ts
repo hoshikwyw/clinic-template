@@ -35,7 +35,12 @@ export const littleStarsPediatric = defineClinicConfig({
     { id: "wellbaby", name: "Well-baby Visit", durationMinutes: 30 },
     { id: "vaccination", name: "Vaccination", durationMinutes: 20 },
     { id: "sickvisit", name: "Sick Visit", durationMinutes: 30 },
-    { id: "teleconsult", name: "Video Consultation", durationMinutes: 20 },
+    {
+      id: "teleconsult",
+      name: "Video Consultation",
+      durationMinutes: 20,
+      telehealth: true,
+    },
   ],
   // Booking collects the guardian's name + phone (canonical contact, relabeled
   // via bookingContact below). The intake holds the child's clinical details.

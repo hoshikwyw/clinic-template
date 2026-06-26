@@ -3,22 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { CalendarDays, Users } from "lucide-react";
+import { CalendarDays, Users, UserCog, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ITEMS = [
-  { href: "/admin", key: "navAppointments", Icon: CalendarDays },
-  { href: "/admin/patients", key: "navPatients", Icon: Users },
-] as const;
-
-/** Admin sidebar navigation (Appointments / Patients). */
-export function AdminNav() {
+/** Admin sidebar navigation. The Staff link is admin-only. */
+export function AdminNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
-  const t = useTranslations("adminPatients");
+  const tp = useTranslations("adminPatients");
+  const ts = useTranslations("adminStaff");
+  const tset = useTranslations("settings");
+
+  const items = [
+    { href: "/admin", label: tp("navAppointments"), Icon: CalendarDays },
+    { href: "/admin/patients", label: tp("navPatients"), Icon: Users },
+    ...(isAdmin
+      ? [{ href: "/admin/staff", label: ts("navStaff"), Icon: UserCog }]
+      : []),
+    { href: "/admin/settings", label: tset("title"), Icon: Settings },
+  ];
 
   return (
     <nav className="flex gap-1 sm:w-full sm:flex-col">
-      {ITEMS.map(({ href, key, Icon }) => {
+      {items.map(({ href, label, Icon }) => {
         const active =
           href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
         return (
@@ -34,7 +40,7 @@ export function AdminNav() {
             )}
           >
             <Icon className="size-4" aria-hidden />
-            {t(key)}
+            {label}
           </Link>
         );
       })}

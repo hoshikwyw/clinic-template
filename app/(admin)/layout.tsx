@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { AccessibilityToolbar } from "@ui";
+import { getSessionUser, isAdmin } from "@auth";
 import { AdminNav } from "./admin-nav";
 
 /**
@@ -13,17 +13,15 @@ export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const t = await getTranslations("admin");
+  const user = await getSessionUser();
 
   return (
     <div className="flex min-h-dvh flex-col sm:flex-row">
-      <aside className="flex flex-col gap-3 border-b border-border p-4 dark:border-zinc-800 sm:w-56 sm:border-b-0 sm:border-r">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold">{t("dashboard")}</span>
-          <AccessibilityToolbar />
-        </div>
-        <AdminNav />
+      <aside className="flex flex-col gap-3 border-b border-border p-4 dark:border-zinc-800 sm:w-56 sm:shrink-0 sm:border-b-0 sm:border-r">
+        <span className="text-sm font-semibold">{t("dashboard")}</span>
+        <AdminNav isAdmin={user ? isAdmin(user.role) : false} />
       </aside>
-      <main className="flex-1 p-4">{children}</main>
+      <main className="min-w-0 flex-1 p-4">{children}</main>
     </div>
   );
 }

@@ -1,20 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CalendarPlus } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { signOut } from "@auth/actions";
-import { BookingWizard } from "@modules/appointments";
 import { getMyAppointments } from "@modules/appointments/server/booking";
-import type { FormSchema } from "@form-engine";
 import { Button } from "@ui/primitives/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@ui/primitives/card";
+import { Card, CardContent } from "@ui/primitives/card";
 
 async function handleSignOut() {
   "use server";
@@ -22,61 +15,54 @@ async function handleSignOut() {
   redirect("/portal");
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: "bg-muted text-muted-foreground",
-    confirmed: "bg-primary/10 text-primary",
-    completed: "bg-emerald-100 text-emerald-700",
-    cancelled: "bg-muted text-muted-foreground line-through",
-  };
-  return (
-    <span className={`rounded-md px-2 py-0.5 text-xs ${styles[status] ?? ""}`}>
-      {status}
-    </span>
-  );
-}
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-muted text-muted-foreground",
+  confirmed: "bg-primary/10 text-primary",
+  completed: "bg-emerald-100 text-emerald-700",
+  cancelled: "bg-muted text-muted-foreground line-through",
+};
 
+/**
+ * Patient home — an overview, not a task. Shows the next appointment at a glance,
+ * a prominent Book call-to-action, and a services overview. Booking itself lives
+ * on its own focused page (/book).
+ */
 export default async function PortalHome() {
   const config = getClinicConfig();
   const t = await getTranslations("portal");
+  const ts = await getTranslations("status");
+  const tb = await getTranslations("booking");
   const locale = await getLocale();
   const user = await getSessionUser();
   const appointments = user ? await getMyAppointments() : [];
 
-  // Canonical contact fields (names fixed; labels come from the clinic config).
-  const contactForm: FormSchema = [
-    {
-      name: "fullName",
-      label: config.bookingContact.nameLabel,
-      type: "text",
-      required: true,
-    },
-    {
-      name: "phone",
-      label: config.bookingContact.phoneLabel,
-      type: "phone",
-      required: true,
-    },
-    {
-      name: "email",
-      label: config.bookingContact.emailLabel,
-      type: "email",
-      required: false,
-    },
-  ];
+  const now = Date.now();
+  const next =
+    appointments
+      .filter(
+        (a) => new Date(a.startIso).getTime() >= now && a.status !== "cancelled"
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.startIso).getTime() - new Date(b.startIso).getTime()
+      )[0] ?? null;
 
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat(locale, {
       timeZone: config.locale.timezone,
-      weekday: "short",
+      weekday: "long",
       day: "numeric",
-      month: "short",
+      month: "long",
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(iso));
 
+  const money = (n?: number) =>
+    n ? `${n.toLocaleString()} ${config.locale.currency}` : "";
+
   return (
     <div className="space-y-6">
+      {/* Greeting */}
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-primary">
@@ -103,52 +89,76 @@ export default async function PortalHome() {
         )}
       </header>
 
+      {/* Next appointment at a glance (logged-in) */}
       {user && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t("apptTitle")}</CardTitle>
-            <CardDescription>
-              {appointments.length === 0 ? t("apptEmpty") : t("apptNewest")}
-            </CardDescription>
-          </CardHeader>
-          {appointments.length > 0 && (
-            <CardContent className="space-y-2 text-sm">
-              {appointments.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-center justify-between gap-4"
-                >
-                  <span>
-                    <span className="font-medium">{a.serviceName}</span>
-                    <span className="block text-muted-foreground">
-                      {fmt(a.startIso)}
-                    </span>
-                  </span>
-                  <StatusBadge status={a.status} />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("nextAppt")}
+              </p>
+              <Link
+                href="/appointments"
+                className="text-xs text-primary hover:underline"
+              >
+                {t("viewAll")}
+              </Link>
+            </div>
+            {next ? (
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <div className="text-sm">
+                  <div className="font-medium">{next.serviceName}</div>
+                  <div className="text-muted-foreground">
+                    {fmt(next.startIso)}
+                  </div>
                 </div>
-              ))}
-            </CardContent>
-          )}
+                <span
+                  className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[next.status] ?? ""}`}
+                >
+                  {ts(next.status)}
+                </span>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("noUpcoming")}
+              </p>
+            )}
+          </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("bookTitle")}</CardTitle>
-          <CardDescription>
-            {user ? t("bookDescUser") : t("bookDescGuest")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BookingWizard
-            services={config.services}
-            contactForm={contactForm}
-            intakeForm={config.intakeForm}
-            timeZone={config.locale.timezone}
-            currency={config.locale.currency}
-          />
-        </CardContent>
-      </Card>
+      {/* Primary action: book */}
+      <Link href="/book" className="block">
+        <div className="flex items-center justify-between gap-4 rounded-2xl bg-primary px-5 py-4 text-primary-foreground transition-opacity hover:opacity-95">
+          <div>
+            <div className="text-lg font-semibold">{t("book")}</div>
+            <div className="text-sm opacity-90">{t("bookCtaSub")}</div>
+          </div>
+          <CalendarPlus className="size-7 shrink-0" aria-hidden />
+        </div>
+      </Link>
+
+      {/* Services overview */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          {t("ourServices")}
+        </h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {config.services.map((s) => (
+            <Link
+              key={s.id}
+              href="/book"
+              className="rounded-xl border border-border p-4 transition-colors hover:border-primary"
+            >
+              <div className="font-medium">{s.name}</div>
+              <div className="text-sm text-muted-foreground">
+                {s.durationMinutes} {tb("minUnit")}
+                {s.price ? ` · ${money(s.price)}` : ""}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

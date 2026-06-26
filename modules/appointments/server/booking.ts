@@ -183,6 +183,7 @@ export async function createAppointment(
 
 export interface MyAppointment {
   id: string;
+  serviceId: string;
   serviceName: string;
   startIso: string;
   status: string;
@@ -196,6 +197,7 @@ export async function getMyAppointments(): Promise<MyAppointment[]> {
   const rows = await db
     .select({
       id: appointments.id,
+      serviceId: appointments.serviceId,
       serviceName: appointments.serviceName,
       startAt: appointments.startAt,
       status: appointments.status,
@@ -207,6 +209,7 @@ export async function getMyAppointments(): Promise<MyAppointment[]> {
 
   return rows.map((r) => ({
     id: r.id,
+    serviceId: r.serviceId,
     serviceName: r.serviceName,
     startIso: r.startAt.toISOString(),
     status: r.status,
@@ -269,6 +272,84 @@ export async function cancelMyAppointment(
     startIso: row.startAt.toISOString(),
     status: "cancelled",
   });
+
+  return { ok: true };
+}
+
+const rescheduleInput = z.object({
+  appointmentId: z.string().min(1),
+  startIso: z.string().min(1),
+});
+
+export interface RescheduleResult {
+  ok: boolean;
+  error?: "unauthorized" | "notFound" | "window" | "unavailable" | "invalid";
+}
+
+/**
+ * Move one of the logged-in patient's appointments to a new slot. Enforces
+ * ownership, the cancellation window (on the CURRENT time), and that the new
+ * slot is genuinely available. Resets to pending + clears the reminder so the
+ * new time gets re-confirmed and re-reminded.
+ */
+export async function rescheduleMyAppointment(
+  raw: unknown
+): Promise<RescheduleResult> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "unauthorized" };
+
+  const parsed = rescheduleInput.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const { appointmentId, startIso } = parsed.data;
+
+  const [row] = await db
+    .select({
+      id: appointments.id,
+      serviceId: appointments.serviceId,
+      startAt: appointments.startAt,
+      status: appointments.status,
+    })
+    .from(appointments)
+    .innerJoin(patients, eq(appointments.patientId, patients.id))
+    .where(
+      and(eq(appointments.id, appointmentId), eq(patients.authUserId, user.id))
+    )
+    .limit(1);
+
+  if (!row) return { ok: false, error: "notFound" };
+  if (row.status === "cancelled" || row.status === "completed") {
+    return { ok: false, error: "notFound" };
+  }
+
+  const config = getClinicConfig();
+  const windowMs = config.bookingRules.cancellationWindowHours * 3_600_000;
+  if (row.startAt.getTime() - Date.now() < windowMs) {
+    return { ok: false, error: "window" };
+  }
+
+  const service = config.services.find((s) => s.id === row.serviceId);
+  if (!service) return { ok: false, error: "invalid" };
+
+  // The new time must be a currently-available slot for this service.
+  const days = await getAvailableSlots(row.serviceId);
+  const available = days.some((d) =>
+    d.slots.some((s) => s.startIso === startIso)
+  );
+  if (!available) return { ok: false, error: "unavailable" };
+
+  const newStart = new Date(startIso);
+  const newEnd = new Date(newStart.getTime() + service.durationMinutes * 60_000);
+
+  await db
+    .update(appointments)
+    .set({
+      startAt: newStart,
+      endAt: newEnd,
+      status: "pending",
+      reminderSentAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(appointments.id, appointmentId));
 
   return { ok: true };
 }

@@ -2,12 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
+import { isModuleEnabled } from "@config-engine";
 import { getSessionUser, isStaff } from "@auth";
 import { signOut } from "@auth/actions";
 import {
   getAllAppointments,
   updateAppointmentStatus,
 } from "@modules/appointments/server/admin";
+import { meetingUrl, isJoinable } from "@modules/telehealth";
 import { Button } from "@ui/primitives/button";
 import {
   Card,
@@ -66,9 +68,11 @@ export default async function AdminHome() {
     );
   }
 
+  const tt = await getTranslations("telehealth");
   const config = getClinicConfig();
   const appointments = await getAllAppointments();
   const locale = await getLocale();
+  const telehealthOn = isModuleEnabled(config, "telehealth");
 
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat(locale, {
@@ -172,6 +176,34 @@ export default async function AdminHome() {
                   {a.serviceName} · {fmt(a.startIso)}
                 </div>
                 <div className="text-muted-foreground">{a.patientPhone}</div>
+                {(() => {
+                  const service = config.services.find(
+                    (s) => s.id === a.serviceId
+                  );
+                  const showTele =
+                    telehealthOn &&
+                    Boolean(service?.telehealth) &&
+                    a.status !== "cancelled" &&
+                    a.status !== "completed";
+                  if (!showTele) return null;
+                  return isJoinable(a.startIso, service!.durationMinutes, now) ? (
+                    <a
+                      href={meetingUrl({
+                        appointmentId: a.id,
+                        clinicSlug: config.slug,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                    >
+                      🎥 {tt("join")}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      🎥 {tt("video")}
+                    </span>
+                  );
+                })()}
               </div>
               <form action={changeStatus} className="flex flex-wrap gap-2">
                 <input type="hidden" name="id" value={a.id} />

@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
-import { AccessibilityToolbar } from "@ui";
 import { Button } from "@ui/primitives/button";
 
 function formatOpenDays(days: number[], dayNames: string[]): string {
@@ -34,6 +34,7 @@ export default async function PublicHome() {
   const config = getClinicConfig();
   const { branding, services, businessHours, locale, specialty } = config;
   const t = await getTranslations("public");
+  const tset = await getTranslations("settings");
   const dayNames = t.raw("dayNames") as string[];
 
   return (
@@ -44,7 +45,13 @@ export default async function PublicHome() {
           {branding.shortName ?? branding.name}
         </span>
         <div className="flex items-center gap-3">
-          <AccessibilityToolbar />
+          <Link
+            href="/settings"
+            aria-label={tset("title")}
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Settings className="size-5" aria-hidden />
+          </Link>
           <Link
             href="/login"
             className="text-sm font-medium underline-offset-4 hover:underline"

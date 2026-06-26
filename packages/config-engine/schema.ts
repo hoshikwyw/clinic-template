@@ -62,6 +62,8 @@ export const serviceSchema = z.object({
   durationMinutes: z.number().int().positive(),
   price: z.number().nonnegative().optional(),
   description: z.string().optional(),
+  /** video consultation — gets a join link when modules.telehealth is on */
+  telehealth: z.boolean().optional(),
 });
 export type Service = z.infer<typeof serviceSchema>;
 

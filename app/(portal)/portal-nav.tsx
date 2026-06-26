@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Home, CalendarDays, User } from "lucide-react";
+import { Home, CalendarDays, User, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/portal", key: "home", Icon: Home },
   { href: "/appointments", key: "appointments", Icon: CalendarDays },
   { href: "/profile", key: "profile", Icon: User },
+  { href: "/settings", key: "settings", Icon: Settings },
 ] as const;
 
 /**
@@ -26,7 +27,7 @@ export function PortalNav() {
       className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto grid max-w-2xl grid-cols-3">
+      <div className="mx-auto grid max-w-2xl grid-cols-4">
         {ITEMS.map(({ href, key, Icon }) => {
           const active = pathname === href;
           return (

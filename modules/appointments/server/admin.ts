@@ -19,6 +19,7 @@ export interface AdminAppointment {
   patientId: string;
   patientName: string;
   patientPhone: string;
+  serviceId: string;
   serviceName: string;
   startIso: string;
   status: string;
@@ -34,6 +35,7 @@ export async function getAllAppointments(): Promise<AdminAppointment[]> {
       patientId: patients.id,
       patientName: patients.fullName,
       patientPhone: patients.phone,
+      serviceId: appointments.serviceId,
       serviceName: appointments.serviceName,
       startAt: appointments.startAt,
       status: appointments.status,
@@ -47,6 +49,7 @@ export async function getAllAppointments(): Promise<AdminAppointment[]> {
     patientId: r.patientId,
     patientName: r.patientName,
     patientPhone: r.patientPhone,
+    serviceId: r.serviceId,
     serviceName: r.serviceName,
     startIso: r.startAt.toISOString(),
     status: r.status,

@@ -7,8 +7,11 @@ import {
   type MyAppointment,
 } from "@modules/appointments/server/booking";
 import { getClinicConfig } from "@/config/clinic";
+import { isModuleEnabled } from "@config-engine";
+import { meetingUrl, isJoinable } from "@modules/telehealth";
 import { Button } from "@ui/primitives/button";
 import { CancelButton } from "./cancel-button";
+import { RescheduleControl } from "./reschedule-control";
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
@@ -27,9 +30,11 @@ export default async function AppointmentsPage() {
 
   const t = await getTranslations("appointments");
   const ts = await getTranslations("status");
+  const tt = await getTranslations("telehealth");
   const locale = await getLocale();
   const config = getClinicConfig();
   const appts = await getMyAppointments();
+  const telehealthOn = isModuleEnabled(config, "telehealth");
 
   const now = Date.now();
   const windowMs = config.bookingRules.cancellationWindowHours * 3_600_000;
@@ -53,22 +58,65 @@ export default async function AppointmentsPage() {
   const upcoming = appts.filter(isUpcoming);
   const past = appts.filter((a) => !isUpcoming(a));
 
-  const Row = ({ a }: { a: MyAppointment }) => (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
-      <div className="space-y-0.5 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{a.serviceName}</span>
-          <span
-            className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[a.status] ?? ""}`}
-          >
-            {ts(a.status)}
-          </span>
+  const Row = ({ a }: { a: MyAppointment }) => {
+    const service = config.services.find((s) => s.id === a.serviceId);
+    const showTele =
+      telehealthOn &&
+      Boolean(service?.telehealth) &&
+      a.status !== "cancelled" &&
+      a.status !== "completed";
+    const joinable =
+      showTele && isJoinable(a.startIso, service!.durationMinutes, now);
+
+    return (
+      <div className="rounded-xl border border-border p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-0.5 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{a.serviceName}</span>
+              <span
+                className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[a.status] ?? ""}`}
+              >
+                {ts(a.status)}
+              </span>
+            </div>
+            <div className="text-muted-foreground">{fmt(a.startIso)}</div>
+          </div>
         </div>
-        <div className="text-muted-foreground">{fmt(a.startIso)}</div>
+
+        {showTele && (
+          <div className="mt-3">
+            {joinable ? (
+              <a
+                href={meetingUrl({
+                  appointmentId: a.id,
+                  clinicSlug: config.slug,
+                })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+              >
+                🎥 {tt("join")}
+              </a>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {tt("video")} · {tt("opensSoon")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {canCancel(a) && (
+          <div className="mt-3 space-y-2 border-t border-border pt-3">
+            <RescheduleControl appointmentId={a.id} serviceId={a.serviceId} />
+            <div className="flex justify-end">
+              <CancelButton id={a.id} />
+            </div>
+          </div>
+        )}
       </div>
-      {canCancel(a) && <CancelButton id={a.id} />}
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -79,7 +127,7 @@ export default async function AppointmentsPage() {
       {appts.length === 0 && (
         <div className="space-y-4 rounded-xl border border-border p-6 text-center">
           <p className="text-muted-foreground">{t("empty")}</p>
-          <Link href="/portal">
+          <Link href="/book">
             <Button size="lg">{t("bookOne")}</Button>
           </Link>
         </div>

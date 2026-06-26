@@ -44,6 +44,11 @@ export function isStaff(role: UserRole): boolean {
   return role !== "patient";
 }
 
+/** Admin = full access, including staff/role management. */
+export function isAdmin(role: UserRole): boolean {
+  return role === "admin";
+}
+
 /** Throws if there is no staff-level user. Use to guard staff-only actions. */
 export async function requireStaff(): Promise<SessionUser> {
   const user = await getSessionUser();
