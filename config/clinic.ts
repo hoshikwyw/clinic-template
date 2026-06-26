@@ -12,6 +12,9 @@ import { smileDental } from "./clinics/smile-dental";
  * Other files in config/clinics/ are example configs to copy from
  * (e.g. little-stars-pediatric — verified to run on this same code in Phase 3).
  */
+// Phase 3 (verified): the pediatric config (little-stars-pediatric) was run on
+// this exact code with zero changes — proving reusability. Swap this line to
+// deploy a different clinic.
 const activeClinic = smileDental;
 
 /** Load + validate this deployment's clinic config (defaults applied). */

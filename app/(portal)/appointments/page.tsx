@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { getSessionUser } from "@auth";
 import {
   getMyAppointments,
@@ -27,6 +27,7 @@ export default async function AppointmentsPage() {
 
   const t = await getTranslations("appointments");
   const ts = await getTranslations("status");
+  const locale = await getLocale();
   const config = getClinicConfig();
   const appts = await getMyAppointments();
 
@@ -34,7 +35,7 @@ export default async function AppointmentsPage() {
   const windowMs = config.bookingRules.cancellationWindowHours * 3_600_000;
 
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat("en-GB", {
+    new Intl.DateTimeFormat(locale, {
       timeZone: config.locale.timezone,
       weekday: "short",
       day: "numeric",

@@ -102,6 +102,8 @@ export interface GenerateSlotsOptions {
   serviceDurationMinutes: number;
   timeZone: string;
   leadTimeHours: number;
+  /** locale for the human-readable day label (defaults to en-GB) */
+  locale?: string;
   now?: Date;
 }
 
@@ -112,6 +114,7 @@ export function generateDaySlots(opts: GenerateSlotsOptions): DaySlots[] {
     serviceDurationMinutes,
     timeZone,
     leadTimeHours,
+    locale = "en-GB",
     now = new Date(),
   } = opts;
 
@@ -149,7 +152,7 @@ export function generateDaySlots(opts: GenerateSlotsOptions): DaySlots[] {
 
     if (slots.length > 0) {
       const labelInstant = zonedWallTimeToUtc(lp.year, lp.month, lp.day, 12, 0, timeZone);
-      const label = new Intl.DateTimeFormat("en-GB", {
+      const label = new Intl.DateTimeFormat(locale, {
         timeZone,
         weekday: "short",
         day: "numeric",

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@ui/primitives/button";
 import {
   Card,
@@ -44,6 +44,7 @@ export function BookingWizard({
   currency,
 }: BookingWizardProps) {
   const t = useTranslations("booking");
+  const locale = useLocale();
   const hasIntake = intakeForm.length > 0;
   const steps: StepKey[] = [
     "service",
@@ -83,7 +84,7 @@ export function BookingWizard({
   }
 
   function formatWhen(iso: string) {
-    return new Intl.DateTimeFormat("en-GB", {
+    return new Intl.DateTimeFormat(locale, {
       timeZone,
       weekday: "short",
       day: "numeric",

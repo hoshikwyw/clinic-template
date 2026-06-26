@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { getLocale } from "next-intl/server";
 import { and, eq, ne, gte, desc } from "drizzle-orm";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
@@ -29,6 +30,7 @@ export async function getAvailableSlots(serviceId: string): Promise<DaySlots[]> 
     serviceDurationMinutes: service.durationMinutes,
     timeZone: config.locale.timezone,
     leadTimeHours: config.bookingRules.leadTimeHours,
+    locale: await getLocale(),
   });
 
   // Remove slots already taken (single-provider MVP: one booking per start time).

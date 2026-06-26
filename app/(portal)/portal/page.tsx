@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { signOut } from "@auth/actions";
@@ -39,6 +39,7 @@ function StatusBadge({ status }: { status: string }) {
 export default async function PortalHome() {
   const config = getClinicConfig();
   const t = await getTranslations("portal");
+  const locale = await getLocale();
   const user = await getSessionUser();
   const appointments = user ? await getMyAppointments() : [];
 
@@ -65,7 +66,7 @@ export default async function PortalHome() {
   ];
 
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat("en-GB", {
+    new Intl.DateTimeFormat(locale, {
       timeZone: config.locale.timezone,
       weekday: "short",
       day: "numeric",

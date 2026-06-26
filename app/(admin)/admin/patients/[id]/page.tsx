@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
 import { getPatientDetail } from "@modules/patients/server/admin";
 import { getClinicConfig } from "@/config/clinic";
@@ -37,12 +37,13 @@ export default async function PatientDetailPage({
   const { id } = await params;
   const t = await getTranslations("adminPatients");
   const ts = await getTranslations("status");
+  const locale = await getLocale();
   const config = getClinicConfig();
   const p = await getPatientDetail(id);
   if (!p) notFound();
 
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat("en-GB", {
+    new Intl.DateTimeFormat(locale, {
       timeZone: config.locale.timezone,
       weekday: "short",
       day: "numeric",
