@@ -120,6 +120,15 @@ export const faqItemSchema = z.object({
 });
 export type FaqItem = z.infer<typeof faqItemSchema>;
 
+/** A clinician shown on the public site's team section. */
+export const doctorSchema = z.object({
+  name: z.string().min(1),
+  /** e.g. "Dentist", "Orthodontist", "Pediatrician" */
+  role: z.string().min(1),
+  bio: z.string().optional(),
+});
+export type Doctor = z.infer<typeof doctorSchema>;
+
 export const clinicConfigSchema = z.object({
   id: z.string().min(1),
   /** URL-safe identifier, e.g. "smile-dental" */
@@ -137,6 +146,9 @@ export const clinicConfigSchema = z.object({
   /** help-center contact details + FAQ (optional, clinic-authored) */
   contact: contactInfoSchema.optional(),
   faq: z.array(faqItemSchema).default([]),
+  /** public landing-page content (optional, clinic-authored) */
+  about: z.string().optional(),
+  doctors: z.array(doctorSchema).default([]),
   staffRoles: z.array(z.string()).default([]),
 });
 /** Output type (after parse — defaults applied). Use this everywhere downstream. */

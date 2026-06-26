@@ -8,6 +8,79 @@
 
 ## 2026-06-26
 
+> Two sessions this date — newest first.
+
+### Session 2 — Feature build-out: full i18n, Phase 3–5 features, tests, CI, security, PWA, help center
+
+**Session focus:** Long build session — completed i18n everywhere, verified
+reusability (Phase 3), added telehealth + staff management + settings/help pages,
+redesigned the patient home, and added tests, CI, a security pass, and PWA install.
+
+### Decisions made
+- **Patient home = overview, not a form.** Booking wizard moved to its own
+  `/book` page; home shows next appointment + Book CTA + services + help.
+- **Settings & Help are dedicated pages** (in nav), not header dropdowns —
+  Burmese labels made cramped toolbars worse.
+- **Telehealth = public Jitsi (MVP).** UUID rooms, no API key; documented that
+  real PHI needs an authenticated provider.
+- **Per-patient email locale** — capture the patient's language at booking and
+  email them in it (not just the clinic default).
+- **Two dev servers** via separate `distDir`: `pnpm app` (5173) / `pnpm dash`
+  (5174) so patient + admin run side-by-side.
+- **Cron fails closed** — `/api/cron/reminders` is disabled (503) when
+  `CRON_SECRET` is unset, instead of being publicly triggerable.
+
+### Done / changed
+- **i18n completed across the whole app** — booking wizard, auth pages, form
+  validation messages, public page, admin dashboard, accessibility/settings
+  controls, and **notification emails** (per-patient locale, locale-aware dates).
+  All UI dates now follow the active locale (Phase 3 fix).
+- **Phase 3 verified** — ran the pediatric config on the same code (Myanmar
+  default, telehealth on, different services) with zero code changes; reverted to
+  Smile Dental.
+- **Patient app** — `/book`, redesigned `/portal` home (overview + service
+  preselect), `/appointments` (cancel + reschedule), `/profile`, `/settings`,
+  `/help`, bottom nav.
+- **Admin app** — patients directory + record (`/admin/patients`), dashboard
+  stats + patient links, staff & role management (`/admin/staff`), settings
+  (`/admin/settings`), reschedule, and **CSV export** (`/admin/export`).
+- **Modules** — telehealth (Jitsi `meetingUrl`/`isJoinable`); notifications
+  threaded with patient locale.
+- **DB** — added `patients.locale` column; migration `0002` generated **and
+  applied to live Supabase**.
+- **Settings** consolidated (was scattered toolbars) → `SettingsPanel` page.
+- **Tests** — Vitest set up (native tsconfig paths); 22 tests across scheduling
+  (timezone math), form-engine, telehealth, config-engine.
+- **Docs/infra** — real root `README.md`; GitHub Actions CI (lint + test +
+  build); **PWA** (config-driven `app/manifest.ts`, `icon.svg`, minimal service
+  worker → installable).
+- **Security pass** — fixed cron fail-open + escaped patient name in email HTML;
+  verified auth guards, server-only data access, service-role key handling,
+  `getUser()` token revalidation.
+- Fixed admin sidebar title wrapping in Myanmar.
+
+### Still open (see 07-open-decisions.md)
+- **Burmese strings are Claude's translations** — native-speaker review still
+  pending (now covers the whole app + emails + help).
+- **FAQ/help content is single-language** (clinic-authored); per-language FAQ not
+  built.
+- **Security recommendations** (not bugs): rate-limit public booking, add audit
+  logging, use an authenticated telehealth provider before real PHI.
+- **All of this session's work is uncommitted** — the user handles git. Note the
+  live DB now has the `patients.locale` column (migration 0002).
+- Open decisions #2 Mobile (Capacitor + PWA-first ✓ shipped) · #3 Play Store ·
+  #5 Compliance bar/region.
+
+### Next session should
+- **Commit** this large body of work first. Then optionally: a Claude-powered
+  help chatbot (grounded in clinic config + FAQ), a native Burmese review,
+  rate-limiting / audit logging for compliance, or `cap add android` to generate
+  the native app.
+
+---
+
+### Session 1 — i18n English/Myanmar
+
 **Session focus:** Re-oriented to the committed single-tenant state, then wired
 in-app i18n with English ↔ Myanmar language switching (verified live).
 

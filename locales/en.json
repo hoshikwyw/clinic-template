@@ -101,6 +101,10 @@
     "heroSubtitle": "Book an appointment online in under a minute — no account needed.",
     "bookCta": "Book an appointment",
     "servicesTitle": "Our services",
+    "aboutTitle": "About us",
+    "teamTitle": "Meet our team",
+    "contactTitle": "Visit us",
+    "call": "Call us",
     "hoursTitle": "Opening hours",
     "minUnit": "min",
     "dayNames": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]

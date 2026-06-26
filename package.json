@@ -6,6 +6,7 @@
     "dev": "next dev",
     "app": "next dev -p 5173",
     "dash": "cross-env NEXT_DIST_DIR=.next-dash next dev -p 5174",
+    "public": "cross-env NEXT_DIST_DIR=.next-public next dev -p 5122",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

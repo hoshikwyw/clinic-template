@@ -75,6 +75,27 @@ export const smileDental = defineClinicConfig({
     slotMinutes: 30,
     bookingHorizonDays: 30,
   },
+  about:
+    "Smile Dental Clinic has cared for families across Yangon for over 15 years. " +
+    "Our team combines gentle, modern dentistry with a calm, welcoming space — " +
+    "from routine check-ups to cosmetic work, you're in good hands.",
+  doctors: [
+    {
+      name: "Dr. Aung Min",
+      role: "Lead Dentist",
+      bio: "15+ years in general and cosmetic dentistry. Gentle with anxious patients.",
+    },
+    {
+      name: "Dr. Su Latt",
+      role: "Orthodontist",
+      bio: "Specialist in braces and aligners for children and adults.",
+    },
+    {
+      name: "Dr. Kyaw Zin",
+      role: "Oral Surgeon",
+      bio: "Extractions, implants, and surgical care with a focus on comfort.",
+    },
+  ],
   contact: {
     phone: "+95 9 123 456 789",
     email: "hello@smiledental.example",

@@ -74,7 +74,9 @@
     ".next-dash/types/**/*.ts",
     ".next-dash/dev/types/**/*.ts",
     ".next-verify/types/**/*.ts",
-    ".next-verify/dev/types/**/*.ts"
+    ".next-verify/dev/types/**/*.ts",
+    ".next-public/types/**/*.ts",
+    ".next-public/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.next-dash/
+/.next-public/
 /out/
 
 # production
