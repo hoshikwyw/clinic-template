@@ -116,6 +116,7 @@
     "title": "Appointments",
     "signedInAs": "{clinic} · signed in as {email}",
     "signOut": "Sign out",
+    "exportCsv": "Export CSV",
     "notAuthorized": "Not authorized",
     "notAuthorizedBody": "This area is for clinic staff. You're signed in as {email}.",
     "allAppointments": "All appointments ({count})",

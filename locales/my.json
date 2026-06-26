@@ -116,6 +116,7 @@
     "title": "ချိန်းဆိုမှုများ",
     "signedInAs": "{clinic} · {email} ဖြင့် ဝင်ရောက်ထားသည်",
     "signOut": "ထွက်ရန်",
+    "exportCsv": "CSV ထုတ်ယူရန်",
     "notAuthorized": "ခွင့်ပြုချက် မရှိပါ",
     "notAuthorizedBody": "ဤနေရာသည် ဆေးခန်းဝန်ထမ်းများအတွက် ဖြစ်သည်။ သင်သည် {email} ဖြင့် ဝင်ရောက်ထားသည်။",
     "allAppointments": "ချိန်းဆိုမှုအားလုံး ({count})",

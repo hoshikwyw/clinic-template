@@ -123,11 +123,19 @@ export default async function AdminHome() {
             })}
           </p>
         </div>
-        <form action={handleSignOut}>
-          <Button type="submit" variant="outline" size="sm">
-            {t("signOut")}
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <a
+            href="/admin/export"
+            className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            {t("exportCsv")}
+          </a>
+          <form action={handleSignOut}>
+            <Button type="submit" variant="outline" size="sm">
+              {t("signOut")}
+            </Button>
+          </form>
+        </div>
       </header>
 
       <div className="grid grid-cols-3 gap-3">
