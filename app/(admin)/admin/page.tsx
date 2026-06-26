@@ -79,6 +79,32 @@ export default async function AdminHome() {
       minute: "2-digit",
     }).format(new Date(iso));
 
+  // Stats (clinic timezone). "Today" = same calendar day; excludes cancelled.
+  const now = Date.now();
+  const dateInTz = (iso: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: config.locale.timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
+  const todayStr = dateInTz(new Date().toISOString());
+  const active = appointments.filter((a) => a.status !== "cancelled");
+  const stats = [
+    {
+      label: t("statToday"),
+      value: active.filter((a) => dateInTz(a.startIso) === todayStr).length,
+    },
+    {
+      label: t("statPending"),
+      value: appointments.filter((a) => a.status === "pending").length,
+    },
+    {
+      label: t("statUpcoming"),
+      value: active.filter((a) => new Date(a.startIso).getTime() >= now).length,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -97,6 +123,17 @@ export default async function AdminHome() {
           </Button>
         </form>
       </header>
+
+      <div className="grid grid-cols-3 gap-3">
+        {stats.map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-primary">{s.value}</div>
+              <div className="text-xs text-muted-foreground">{s.label}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       <Card>
         <CardHeader>
@@ -122,7 +159,12 @@ export default async function AdminHome() {
             >
               <div className="space-y-0.5 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{a.patientName}</span>
+                  <Link
+                    href={`/admin/patients/${a.patientId}`}
+                    className="font-medium hover:underline"
+                  >
+                    {a.patientName}
+                  </Link>
                   <StatusBadge status={a.status} label={ts(a.status)} />
                 </div>
                 <div className="text-muted-foreground">

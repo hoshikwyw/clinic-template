@@ -16,6 +16,7 @@ import { notifyAppointmentStatus } from "@modules/notifications";
 
 export interface AdminAppointment {
   id: string;
+  patientId: string;
   patientName: string;
   patientPhone: string;
   serviceName: string;
@@ -30,6 +31,7 @@ export async function getAllAppointments(): Promise<AdminAppointment[]> {
   const rows = await db
     .select({
       id: appointments.id,
+      patientId: patients.id,
       patientName: patients.fullName,
       patientPhone: patients.phone,
       serviceName: appointments.serviceName,
@@ -42,6 +44,7 @@ export async function getAllAppointments(): Promise<AdminAppointment[]> {
 
   return rows.map((r) => ({
     id: r.id,
+    patientId: r.patientId,
     patientName: r.patientName,
     patientPhone: r.patientPhone,
     serviceName: r.serviceName,

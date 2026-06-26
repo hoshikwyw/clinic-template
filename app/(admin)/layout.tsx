@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { AccessibilityToolbar } from "@ui";
+import { AdminNav } from "./admin-nav";
 
 /**
  * Admin Dashboard shell — wraps everything under this route group.
@@ -15,9 +16,12 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-dvh flex-col sm:flex-row">
-      <aside className="flex items-center justify-between gap-2 border-b border-border p-4 dark:border-zinc-800 sm:w-56 sm:flex-col sm:items-start sm:border-b-0 sm:border-r">
-        <span className="text-sm font-semibold">{t("dashboard")}</span>
-        <AccessibilityToolbar />
+      <aside className="flex flex-col gap-3 border-b border-border p-4 dark:border-zinc-800 sm:w-56 sm:border-b-0 sm:border-r">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold">{t("dashboard")}</span>
+          <AccessibilityToolbar />
+        </div>
+        <AdminNav />
       </aside>
       <main className="flex-1 p-4">{children}</main>
     </div>
