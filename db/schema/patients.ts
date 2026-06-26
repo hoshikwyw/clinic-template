@@ -28,6 +28,8 @@ export const patients = pgTable(
     fullName: text("full_name").notNull(),
     phone: text("phone").notNull(),
     email: text("email"),
+    /** preferred language (e.g. "en", "my") — captured at booking, used for emails */
+    locale: text("locale"),
     dateOfBirth: date("date_of_birth"),
     /** snapshot of intake-form answers (form-engine schema is config-driven) */
     intake: jsonb("intake"),

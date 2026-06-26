@@ -84,6 +84,7 @@ export async function updateAppointmentStatus(
       .select({
         email: patients.email,
         name: patients.fullName,
+        locale: patients.locale,
         serviceName: appointments.serviceName,
         startAt: appointments.startAt,
       })
@@ -98,6 +99,7 @@ export async function updateAppointmentStatus(
         serviceName: row.serviceName,
         startIso: row.startAt.toISOString(),
         status: parsed,
+        locale: row.locale,
       });
     }
   }

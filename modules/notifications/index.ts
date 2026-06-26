@@ -22,6 +22,8 @@ interface NotifyData {
   patientName: string;
   serviceName: string;
   startIso: string;
+  /** patient's preferred language; falls back to the clinic default */
+  locale?: string | null;
 }
 
 export async function notifyAppointmentBooked(d: NotifyData): Promise<void> {
@@ -70,6 +72,7 @@ export async function sendDueReminders(): Promise<ReminderRunResult> {
       startAt: appointments.startAt,
       email: patients.email,
       name: patients.fullName,
+      locale: patients.locale,
     })
     .from(appointments)
     .innerJoin(patients, eq(appointments.patientId, patients.id))
@@ -92,6 +95,7 @@ export async function sendDueReminders(): Promise<ReminderRunResult> {
           patientName: r.name,
           serviceName: r.serviceName,
           startIso: r.startAt.toISOString(),
+          locale: r.locale,
         });
         await provider.send({ to: r.email, subject, html });
         sent++;

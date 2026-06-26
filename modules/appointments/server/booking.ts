@@ -85,6 +85,13 @@ export async function createAppointment(
   const service = config.services.find((s) => s.id === input.serviceId);
   if (!service) return { ok: false, error: "Unknown service." };
 
+  // Capture the patient's language (validated against the clinic's) so their
+  // notification emails go out in the right language.
+  const cookieLocale = await getLocale();
+  const patientLocale = config.locale.languages.includes(cookieLocale)
+    ? cookieLocale
+    : config.locale.defaultLang;
+
   const startAt = new Date(input.startIso);
   if (Number.isNaN(startAt.getTime())) {
     return { ok: false, error: "Invalid time." };
@@ -125,6 +132,7 @@ export async function createAppointment(
           phone: input.contact.phone,
           email: input.contact.email || null,
           intake: input.intake ?? null,
+          locale: patientLocale,
           updatedAt: new Date(),
         })
         .where(eq(patients.id, existing.id));
@@ -137,6 +145,7 @@ export async function createAppointment(
           phone: input.contact.phone,
           email: input.contact.email || null,
           intake: input.intake ?? null,
+          locale: patientLocale,
         })
         .returning({ id: patients.id });
       patientId = created.id;
@@ -149,6 +158,7 @@ export async function createAppointment(
         phone: input.contact.phone,
         email: input.contact.email || null,
         intake: input.intake ?? null,
+        locale: patientLocale,
       })
       .returning({ id: patients.id });
     patientId = guest.id;
@@ -171,6 +181,7 @@ export async function createAppointment(
     patientName: input.contact.fullName,
     serviceName: service.name,
     startIso: appt.startAt.toISOString(),
+    locale: patientLocale,
   });
 
   return {
@@ -240,6 +251,7 @@ export async function cancelMyAppointment(
       serviceName: appointments.serviceName,
       patientName: patients.fullName,
       email: patients.email,
+      locale: patients.locale,
     })
     .from(appointments)
     .innerJoin(patients, eq(appointments.patientId, patients.id))
@@ -271,6 +283,7 @@ export async function cancelMyAppointment(
     serviceName: row.serviceName,
     startIso: row.startAt.toISOString(),
     status: "cancelled",
+    locale: row.locale,
   });
 
   return { ok: true };

@@ -21,10 +21,21 @@ export interface AppointmentEmailData {
   patientName: string;
   serviceName: string;
   startIso: string;
+  /** patient's preferred language; falls back to the clinic default */
+  locale?: string | null;
 }
 
-function emailTranslator(clinic: ClinicConfig) {
-  const locale = clinic.locale.defaultLang;
+/** Resolve the email language: patient's preference if the clinic enables it. */
+function resolveLocale(
+  clinic: ClinicConfig,
+  preferred?: string | null
+): string {
+  return preferred && clinic.locale.languages.includes(preferred)
+    ? preferred
+    : clinic.locale.defaultLang;
+}
+
+function emailTranslator(clinic: ClinicConfig, locale: string) {
   const messages = MESSAGES[locale] ?? en;
   return createTranslator({ locale, messages, namespace: "email" });
 }
@@ -57,12 +68,9 @@ function wrap(
 }
 
 export function bookedEmail(clinic: ClinicConfig, d: AppointmentEmailData) {
-  const t = emailTranslator(clinic);
-  const when = formatWhen(
-    d.startIso,
-    clinic.locale.timezone,
-    clinic.locale.defaultLang
-  );
+  const locale = resolveLocale(clinic, d.locale);
+  const t = emailTranslator(clinic, locale);
+  const when = formatWhen(d.startIso, clinic.locale.timezone, locale);
   return {
     subject: t("bookedSubject", { clinic: clinic.branding.name }),
     html: wrap(
@@ -79,12 +87,9 @@ export function statusEmail(
   clinic: ClinicConfig,
   d: AppointmentEmailData & { status: string }
 ) {
-  const t = emailTranslator(clinic);
-  const when = formatWhen(
-    d.startIso,
-    clinic.locale.timezone,
-    clinic.locale.defaultLang
-  );
+  const locale = resolveLocale(clinic, d.locale);
+  const t = emailTranslator(clinic, locale);
+  const when = formatWhen(d.startIso, clinic.locale.timezone, locale);
   const headline =
     d.status === "confirmed"
       ? t("confirmedHeadline")
@@ -103,12 +108,9 @@ export function statusEmail(
 }
 
 export function reminderEmail(clinic: ClinicConfig, d: AppointmentEmailData) {
-  const t = emailTranslator(clinic);
-  const when = formatWhen(
-    d.startIso,
-    clinic.locale.timezone,
-    clinic.locale.defaultLang
-  );
+  const locale = resolveLocale(clinic, d.locale);
+  const t = emailTranslator(clinic, locale);
+  const when = formatWhen(d.startIso, clinic.locale.timezone, locale);
   return {
     subject: t("reminderSubject", { clinic: clinic.branding.name }),
     html: wrap(
