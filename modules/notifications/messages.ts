@@ -53,6 +53,14 @@ function formatWhen(iso: string, timeZone: string, locale: string): string {
 
 const strong = (s: string) => `<strong>${s}</strong>`;
 
+/** Escape user-supplied text before it goes into email HTML. */
+const esc = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
 function wrap(
   clinic: ClinicConfig,
   t: ReturnType<typeof emailTranslator>,
@@ -76,7 +84,7 @@ export function bookedEmail(clinic: ClinicConfig, d: AppointmentEmailData) {
     html: wrap(
       clinic,
       t,
-      `<p>${t("greeting", { name: d.patientName })}</p>
+      `<p>${t("greeting", { name: esc(d.patientName) })}</p>
        <p>${t("bookedBody", { service: strong(d.serviceName), when: strong(when) })}</p>
        <p>${t("bookedContact")}</p>`
     ),
@@ -101,7 +109,7 @@ export function statusEmail(
     html: wrap(
       clinic,
       t,
-      `<p>${t("greeting", { name: d.patientName })}</p>
+      `<p>${t("greeting", { name: esc(d.patientName) })}</p>
        <p>${t("statusBody", { headline, service: strong(d.serviceName), when: strong(when) })}</p>`
     ),
   };
@@ -116,7 +124,7 @@ export function reminderEmail(clinic: ClinicConfig, d: AppointmentEmailData) {
     html: wrap(
       clinic,
       t,
-      `<p>${t("greeting", { name: d.patientName })}</p>
+      `<p>${t("greeting", { name: esc(d.patientName) })}</p>
        <p>${t("reminderBody", { service: strong(d.serviceName), when: strong(when) })}</p>`
     ),
   };

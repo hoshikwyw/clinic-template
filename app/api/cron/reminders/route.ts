@@ -7,14 +7,18 @@ import { sendDueReminders } from "@modules/notifications";
  *
  * Guarded by CRON_SECRET: callers must send `Authorization: Bearer <secret>`.
  * Vercel Cron sends this automatically when CRON_SECRET is set.
+ *
+ * Fails CLOSED: if CRON_SECRET is not configured, the endpoint is disabled
+ * rather than left publicly triggerable.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+  if (!secret) {
+    return new NextResponse("Cron is not configured", { status: 503 });
+  }
+  const auth = request.headers.get("authorization");
+  if (auth !== `Bearer ${secret}`) {
+    return new NextResponse("Unauthorized", { status: 401 });
   }
 
   const result = await sendDueReminders();
