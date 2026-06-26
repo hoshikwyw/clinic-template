@@ -92,6 +92,20 @@
     "completed": "Completed",
     "cancelled": "Cancelled"
   },
+  "email": {
+    "automatedFooter": "This is an automated message from {clinic}.",
+    "greeting": "Hi {name},",
+    "bookedSubject": "Appointment requested — {clinic}",
+    "bookedBody": "We've received your request for {service} on {when}.",
+    "bookedContact": "We'll contact you to confirm. Please keep your phone reachable.",
+    "confirmedHeadline": "Your appointment is confirmed",
+    "cancelledHeadline": "Your appointment was cancelled",
+    "statusHeadlineGeneric": "Your appointment is now {status}",
+    "statusSubject": "{headline} — {clinic}",
+    "statusBody": "{headline}: {service} on {when}.",
+    "reminderSubject": "Reminder: your appointment — {clinic}",
+    "reminderBody": "This is a reminder for your {service} appointment on {when}."
+  },
   "booking": {
     "stepService": "Choose a service",
     "stepWhen": "Pick a time",

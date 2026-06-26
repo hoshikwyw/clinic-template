@@ -1,9 +1,21 @@
+import { createTranslator } from "next-intl";
 import type { ClinicConfig } from "@config-engine";
+import en from "@/locales/en.json";
+import my from "@/locales/my.json";
 
 /**
  * Email templates for appointment notifications. Plain, accessible HTML.
  * Subject + body are built from the clinic config + appointment details.
+ *
+ * Localized to the clinic's DEFAULT language (config.locale.defaultLang). Emails
+ * are sent from server actions AND the reminder cron (no request context), so we
+ * use next-intl's createTranslator with directly-imported messages rather than
+ * the request-scoped getTranslations. Per-patient locale could be captured at
+ * booking time later. See docs/08-i18n-languages.md.
  */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MESSAGES: Record<string, any> = { en, my };
 
 export interface AppointmentEmailData {
   patientName: string;
@@ -11,8 +23,14 @@ export interface AppointmentEmailData {
   startIso: string;
 }
 
-function formatWhen(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+function emailTranslator(clinic: ClinicConfig) {
+  const locale = clinic.locale.defaultLang;
+  const messages = MESSAGES[locale] ?? en;
+  return createTranslator({ locale, messages, namespace: "email" });
+}
+
+function formatWhen(iso: string, timeZone: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     timeZone,
     weekday: "long",
     day: "numeric",
@@ -22,26 +40,37 @@ function formatWhen(iso: string, timeZone: string): string {
   }).format(new Date(iso));
 }
 
-function wrap(clinic: ClinicConfig, body: string): string {
+const strong = (s: string) => `<strong>${s}</strong>`;
+
+function wrap(
+  clinic: ClinicConfig,
+  t: ReturnType<typeof emailTranslator>,
+  body: string
+): string {
   return `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:auto">
     <h2 style="color:#111">${clinic.branding.name}</h2>
     ${body}
     <p style="color:#666;font-size:12px;margin-top:24px">
-      This is an automated message from ${clinic.branding.name}.
+      ${t("automatedFooter", { clinic: clinic.branding.name })}
     </p>
   </div>`;
 }
 
 export function bookedEmail(clinic: ClinicConfig, d: AppointmentEmailData) {
-  const when = formatWhen(d.startIso, clinic.locale.timezone);
+  const t = emailTranslator(clinic);
+  const when = formatWhen(
+    d.startIso,
+    clinic.locale.timezone,
+    clinic.locale.defaultLang
+  );
   return {
-    subject: `Appointment requested — ${clinic.branding.name}`,
+    subject: t("bookedSubject", { clinic: clinic.branding.name }),
     html: wrap(
       clinic,
-      `<p>Hi ${d.patientName},</p>
-       <p>We've received your request for <strong>${d.serviceName}</strong> on
-       <strong>${when}</strong>.</p>
-       <p>We'll contact you to confirm. Please keep your phone reachable.</p>`
+      t,
+      `<p>${t("greeting", { name: d.patientName })}</p>
+       <p>${t("bookedBody", { service: strong(d.serviceName), when: strong(when) })}</p>
+       <p>${t("bookedContact")}</p>`
     ),
   };
 }
@@ -50,32 +79,43 @@ export function statusEmail(
   clinic: ClinicConfig,
   d: AppointmentEmailData & { status: string }
 ) {
-  const when = formatWhen(d.startIso, clinic.locale.timezone);
+  const t = emailTranslator(clinic);
+  const when = formatWhen(
+    d.startIso,
+    clinic.locale.timezone,
+    clinic.locale.defaultLang
+  );
   const headline =
     d.status === "confirmed"
-      ? "Your appointment is confirmed"
+      ? t("confirmedHeadline")
       : d.status === "cancelled"
-        ? "Your appointment was cancelled"
-        : `Your appointment is now ${d.status}`;
+        ? t("cancelledHeadline")
+        : t("statusHeadlineGeneric", { status: d.status });
   return {
-    subject: `${headline} — ${clinic.branding.name}`,
+    subject: t("statusSubject", { headline, clinic: clinic.branding.name }),
     html: wrap(
       clinic,
-      `<p>Hi ${d.patientName},</p>
-       <p>${headline}: <strong>${d.serviceName}</strong> on <strong>${when}</strong>.</p>`
+      t,
+      `<p>${t("greeting", { name: d.patientName })}</p>
+       <p>${t("statusBody", { headline, service: strong(d.serviceName), when: strong(when) })}</p>`
     ),
   };
 }
 
 export function reminderEmail(clinic: ClinicConfig, d: AppointmentEmailData) {
-  const when = formatWhen(d.startIso, clinic.locale.timezone);
+  const t = emailTranslator(clinic);
+  const when = formatWhen(
+    d.startIso,
+    clinic.locale.timezone,
+    clinic.locale.defaultLang
+  );
   return {
-    subject: `Reminder: your appointment — ${clinic.branding.name}`,
+    subject: t("reminderSubject", { clinic: clinic.branding.name }),
     html: wrap(
       clinic,
-      `<p>Hi ${d.patientName},</p>
-       <p>This is a reminder for your <strong>${d.serviceName}</strong> appointment
-       on <strong>${when}</strong>.</p>`
+      t,
+      `<p>${t("greeting", { name: d.patientName })}</p>
+       <p>${t("reminderBody", { service: strong(d.serviceName), when: strong(when) })}</p>`
     ),
   };
 }

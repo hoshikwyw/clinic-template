@@ -92,6 +92,20 @@
     "completed": "ပြီးစီးပြီး",
     "cancelled": "ပယ်ဖျက်ပြီး"
   },
+  "email": {
+    "automatedFooter": "ဤသည် {clinic} မှ အလိုအလျောက် ပေးပို့သော စာ ဖြစ်သည်။",
+    "greeting": "မင်္ဂလာပါ {name}၊",
+    "bookedSubject": "ချိန်းဆိုမှု တောင်းဆိုခြင်း — {clinic}",
+    "bookedBody": "{service} အတွက် {when} တွင် သင့်တောင်းဆိုမှုကို လက်ခံရရှိပါသည်။",
+    "bookedContact": "အတည်ပြုရန် ကျွန်ုပ်တို့ ဆက်သွယ်ပါမည်။ ဖုန်းဖွင့်ထားပါ။",
+    "confirmedHeadline": "သင့်ချိန်းဆိုမှု အတည်ပြုပြီးပါပြီ",
+    "cancelledHeadline": "သင့်ချိန်းဆိုမှု ပယ်ဖျက်လိုက်ပါပြီ",
+    "statusHeadlineGeneric": "သင့်ချိန်းဆိုမှု အခြေအနေမှာ {status} ဖြစ်ပါသည်",
+    "statusSubject": "{headline} — {clinic}",
+    "statusBody": "{headline}: {when} တွင် {service}။",
+    "reminderSubject": "သတိပေးချက် — သင့်ချိန်းဆိုမှု — {clinic}",
+    "reminderBody": "{when} တွင် သင့် {service} ချိန်းဆိုမှုအတွက် သတိပေးချက် ဖြစ်ပါသည်။"
+  },
   "booking": {
     "stepService": "ဝန်ဆောင်မှု ရွေးချယ်ပါ",
     "stepWhen": "အချိန် ရွေးချယ်ပါ",
