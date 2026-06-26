@@ -147,7 +147,7 @@ export default async function PortalHome() {
           {config.services.map((s) => (
             <Link
               key={s.id}
-              href="/book"
+              href={`/book?service=${s.id}`}
               className="rounded-xl border border-border p-4 transition-colors hover:border-primary"
             >
               <div className="font-medium">{s.name}</div>

@@ -32,6 +32,8 @@ export interface BookingWizardProps {
   intakeForm: FormSchema;
   timeZone: string;
   currency: string;
+  /** preselect a service (e.g. from a "book this service" link) and skip to time */
+  initialServiceId?: string;
 }
 
 type StepKey = "service" | "when" | "details" | "intake" | "review";
@@ -42,6 +44,7 @@ export function BookingWizard({
   intakeForm,
   timeZone,
   currency,
+  initialServiceId,
 }: BookingWizardProps) {
   const t = useTranslations("booking");
   const locale = useLocale();
@@ -68,6 +71,18 @@ export function BookingWizard({
   );
   const [submitting, setSubmitting] = React.useState(false);
   const [result, setResult] = React.useState<BookingResult | null>(null);
+
+  // Preselect a service passed in (e.g. from a home service card), skipping to
+  // the time step. Runs once.
+  const didInit = React.useRef(false);
+  React.useEffect(() => {
+    if (didInit.current) return;
+    if (initialServiceId && services.some((s) => s.id === initialServiceId)) {
+      didInit.current = true;
+      void chooseService(initialServiceId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialServiceId, services]);
 
   const step = steps[stepIndex];
   const service = services.find((s) => s.id === serviceId) ?? null;

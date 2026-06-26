@@ -8,10 +8,15 @@ import type { FormSchema } from "@form-engine";
  * Booking page — the focused booking wizard. Reached from the home CTA and the
  * services overview. Guest-accessible (no login needed to book).
  */
-export default async function BookPage() {
+export default async function BookPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ service?: string }>;
+}) {
   const config = getClinicConfig();
   const t = await getTranslations("portal");
   const user = await getSessionUser();
+  const { service: initialServiceId } = await searchParams;
 
   // Canonical contact fields (names fixed; labels come from the clinic config).
   const contactForm: FormSchema = [
@@ -51,6 +56,7 @@ export default async function BookPage() {
         intakeForm={config.intakeForm}
         timeZone={config.locale.timezone}
         currency={config.locale.currency}
+        initialServiceId={initialServiceId}
       />
     </div>
   );
