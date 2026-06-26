@@ -48,3 +48,4 @@ export {
 export { ClinicThemeProvider } from "./theme/clinic-theme";
 export { brandingToStyle } from "./theme/branding";
 export { AccessibilityToolbar } from "./shell/accessibility-toolbar";
+export { LanguageSwitcher } from "./i18n/language-switcher";

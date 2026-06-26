@@ -13,6 +13,18 @@
     "appointments": "Appointments",
     "profile": "Profile"
   },
+  "portal": {
+    "welcome": "Welcome",
+    "greeting": "Hi, {name}",
+    "logIn": "Log in",
+    "signOut": "Sign out",
+    "apptTitle": "Your appointments",
+    "apptEmpty": "No appointments yet — book one below.",
+    "apptNewest": "Newest first.",
+    "bookTitle": "Book an appointment",
+    "bookDescUser": "Booked under your account.",
+    "bookDescGuest": "No account needed — or log in to track your visits."
+  },
   "booking": {
     "pickService": "Choose a service",
     "pickTime": "Choose a time",

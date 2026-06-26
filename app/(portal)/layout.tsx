@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getClinicConfig } from "@/config/clinic";
-import { AccessibilityToolbar } from "@ui";
+import { AccessibilityToolbar, LanguageSwitcher } from "@ui";
 
 /**
  * Patient / Staff app shell — wraps everything under this route group.
@@ -27,7 +27,10 @@ export default function PortalLayout({
         >
           {config.branding.shortName ?? config.branding.name}
         </Link>
-        <AccessibilityToolbar />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher languages={config.locale.languages} />
+          <AccessibilityToolbar />
+        </div>
       </header>
       <main className="mx-auto w-full max-w-2xl flex-1 p-4">{children}</main>
     </div>

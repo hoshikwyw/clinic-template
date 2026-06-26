@@ -174,3 +174,9 @@ html[data-contrast="high"].dark {
     scroll-behavior: auto !important;
   }
 }
+/* Myanmar (Burmese) glyph coverage — Latin uses Geist first, Burmese codepoints
+   fall back to Noto Sans Myanmar so `my` text renders correctly everywhere.
+   See docs/08-i18n-languages.md. */
+body {
+  font-family: var(--font-geist-sans), var(--font-myanmar), system-ui, sans-serif;
+}

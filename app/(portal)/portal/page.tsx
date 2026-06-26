@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { signOut } from "@auth/actions";
@@ -37,6 +38,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default async function PortalHome() {
   const config = getClinicConfig();
+  const t = await getTranslations("portal");
   const user = await getSessionUser();
   const appointments = user ? await getMyAppointments() : [];
 
@@ -80,19 +82,21 @@ export default async function PortalHome() {
             {config.branding.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {user ? `Hi, ${user.fullName ?? user.email}` : "Welcome"}
+            {user
+              ? t("greeting", { name: user.fullName ?? user.email })
+              : t("welcome")}
           </p>
         </div>
         {user ? (
           <form action={handleSignOut}>
             <Button type="submit" variant="outline" size="sm">
-              Sign out
+              {t("signOut")}
             </Button>
           </form>
         ) : (
           <Link href="/login">
             <Button variant="outline" size="sm">
-              Log in
+              {t("logIn")}
             </Button>
           </Link>
         )}
@@ -101,11 +105,9 @@ export default async function PortalHome() {
       {user && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your appointments</CardTitle>
+            <CardTitle className="text-base">{t("apptTitle")}</CardTitle>
             <CardDescription>
-              {appointments.length === 0
-                ? "No appointments yet — book one below."
-                : "Newest first."}
+              {appointments.length === 0 ? t("apptEmpty") : t("apptNewest")}
             </CardDescription>
           </CardHeader>
           {appointments.length > 0 && (
@@ -131,11 +133,9 @@ export default async function PortalHome() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Book an appointment</CardTitle>
+          <CardTitle className="text-base">{t("bookTitle")}</CardTitle>
           <CardDescription>
-            {user
-              ? "Booked under your account."
-              : "No account needed — or log in to track your visits."}
+            {user ? t("bookDescUser") : t("bookDescGuest")}
           </CardDescription>
         </CardHeader>
         <CardContent>

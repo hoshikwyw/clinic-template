@@ -6,6 +6,54 @@
 
 ---
 
+## 2026-06-26
+
+**Session focus:** Re-oriented to the committed single-tenant state, then wired
+in-app i18n with English ↔ Myanmar language switching (verified live).
+
+### Decisions made
+- **i18n approach = cookie-based locale (no URL routing).** Fits the
+  single-tenant app and avoids touching the auth `proxy.ts`. Active locale comes
+  from the `NEXT_LOCALE` cookie, validated against `config.locale.languages`.
+- **Myanmar handled via font fallback**, not per-locale class — `Noto Sans
+  Myanmar` appended to the body font stack so Burmese glyphs render in any locale.
+- **i18n coverage is incremental** — wired the pipeline + portal page first;
+  remaining strings migrate to `t()` over time. Rule: no hardcoded user-facing
+  strings now that the machinery exists.
+
+### Done / changed
+- Installed **next-intl v4.13**.
+- `i18n/request.ts` (cookie locale + validation + message loading);
+  `next.config.ts` wrapped with `createNextIntlPlugin`.
+- Root `app/layout.tsx`: async, `getLocale()`, `NextIntlClientProvider`,
+  `<html lang>` per locale, `Noto_Sans_Myanmar` font; `globals.css` body
+  font-stack fallback.
+- `lib/i18n/actions.ts` (`setLocale` server action) + `LanguageSwitcher`
+  (`packages/ui/i18n/`, exported from `@ui`), placed in the portal header beside
+  the accessibility toolbar.
+- Expanded `locales/en.json` + `locales/my.json` (added `portal` namespace);
+  translated portal page strings via `getTranslations`.
+- **Verified live:** build green; `/portal` renders English by default and full
+  Burmese under the `my` cookie; `<html lang>` switches `en`→`my`.
+- Confirmed Supabase is already connected (Phases 0–2 were committed before this
+  session); did **not** run the old multi-clinic seed (obsolete after single-tenant).
+
+### Still open (see 07-open-decisions.md)
+- **Burmese strings are Claude's translations** — need a native-speaker review
+  before real patient use.
+- i18n coverage gaps: **booking wizard, admin dashboard, login/signup** still
+  hardcoded English.
+- Open decisions #2 Mobile delivery (Capacitor, PWA-first) · #3 Play Store
+  now/later · #5 Compliance bar/region.
+- This session's work is **uncommitted** — the user handles git.
+
+### Next session should
+- Expand i18n coverage (booking wizard + admin + auth → `t()`) and get a Burmese
+  review, OR start **Phase 3** (pediatric config as a contrasting clinic), OR
+  begin **Phase 4** modules (billing / telehealth).
+
+---
+
 ## 2026-06-25
 
 > Two sessions this date — newest first.

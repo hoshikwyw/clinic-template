@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Myanmar } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { brandingToStyle } from "@ui/theme/branding";
 import "./globals.css";
@@ -12,6 +14,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Myanmar (Burmese) Unicode coverage — used as a font-stack fallback so Burmese
+// text renders correctly on every device. See docs/08-i18n-languages.md.
+const notoMyanmar = Noto_Sans_Myanmar({
+  variable: "--font-myanmar",
+  subsets: ["myanmar"],
+  weight: ["400", "500", "700"],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,24 +49,25 @@ export const viewport: Viewport = {
 // Applies saved accessibility prefs before paint, so there's no flash.
 const A11Y_INIT = `(function(){try{var d=document.documentElement.dataset;var f=localStorage.getItem('a11y-font');if(f)d.fontScale=f;if(localStorage.getItem('a11y-contrast')==='high')d.contrast='high';}catch(e){}})();`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const config = getClinicConfig();
+  const locale = await getLocale();
 
   return (
     <html
-      lang={config.locale.defaultLang}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang={locale}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoMyanmar.variable} h-full antialiased`}
     >
       <body
         className="flex min-h-full flex-col"
         style={brandingToStyle(config.branding)}
       >
         <script dangerouslySetInnerHTML={{ __html: A11Y_INIT }} />
-        {children}
+        <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>
   );

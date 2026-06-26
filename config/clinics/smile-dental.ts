@@ -2,7 +2,8 @@ import { defineClinicConfig } from "@config-engine";
 
 /**
  * Sample clinic #1 — a DENTAL clinic.
- * Demonstrates: billing on, telehealth off, dental-specific services + intake.
+ * Demonstrates: telehealth off, dental-specific services + intake.
+ * Billing is OFF for now — clinics handle their own billing outside the app.
  * Replace with real clients later (or load from DB).
  */
 export const smileDental = defineClinicConfig({
@@ -26,7 +27,7 @@ export const smileDental = defineClinicConfig({
     patients: true,
     scheduling: true,
     notifications: true,
-    billing: true,
+    billing: false,
     staff: true,
     telehealth: false,
   },
