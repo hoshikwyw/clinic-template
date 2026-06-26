@@ -7,7 +7,10 @@ import { appointments, patients } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { generateDaySlots, type DaySlots } from "@modules/scheduling";
-import { notifyAppointmentBooked } from "@modules/notifications";
+import {
+  notifyAppointmentBooked,
+  notifyAppointmentStatus,
+} from "@modules/notifications";
 
 /**
  * Booking server actions. Run on a trusted direct DB connection (Drizzle), so
@@ -206,4 +209,64 @@ export async function getMyAppointments(): Promise<MyAppointment[]> {
     startIso: r.startAt.toISOString(),
     status: r.status,
   }));
+}
+
+export interface CancelResult {
+  ok: boolean;
+  error?: "unauthorized" | "notFound" | "window" | "alreadyEnded";
+}
+
+/**
+ * Cancel one of the logged-in patient's own appointments. Enforces ownership
+ * and the clinic's cancellation window (config.bookingRules.cancellationWindowHours).
+ */
+export async function cancelMyAppointment(
+  appointmentId: string
+): Promise<CancelResult> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: "unauthorized" };
+
+  // Ownership check: the appointment must belong to this user's patient record.
+  const [row] = await db
+    .select({
+      id: appointments.id,
+      startAt: appointments.startAt,
+      status: appointments.status,
+      serviceName: appointments.serviceName,
+      patientName: patients.fullName,
+      email: patients.email,
+    })
+    .from(appointments)
+    .innerJoin(patients, eq(appointments.patientId, patients.id))
+    .where(
+      and(eq(appointments.id, appointmentId), eq(patients.authUserId, user.id))
+    )
+    .limit(1);
+
+  if (!row) return { ok: false, error: "notFound" };
+  if (row.status === "cancelled" || row.status === "completed") {
+    return { ok: false, error: "alreadyEnded" };
+  }
+
+  // Enforce the cancellation window: must cancel at least N hours before start.
+  const windowMs =
+    getClinicConfig().bookingRules.cancellationWindowHours * 3_600_000;
+  if (row.startAt.getTime() - Date.now() < windowMs) {
+    return { ok: false, error: "window" };
+  }
+
+  await db
+    .update(appointments)
+    .set({ status: "cancelled", updatedAt: new Date() })
+    .where(eq(appointments.id, appointmentId));
+
+  await notifyAppointmentStatus({
+    to: row.email,
+    patientName: row.patientName,
+    serviceName: row.serviceName,
+    startIso: row.startAt.toISOString(),
+    status: "cancelled",
+  });
+
+  return { ok: true };
 }

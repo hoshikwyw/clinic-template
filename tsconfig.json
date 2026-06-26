@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,19 +23,45 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "@ui": ["./packages/ui/index.ts"],
-      "@ui/*": ["./packages/ui/*"],
-      "@config-engine": ["./packages/config-engine/index.ts"],
-      "@config-engine/*": ["./packages/config-engine/*"],
-      "@form-engine": ["./packages/form-engine/index.ts"],
-      "@form-engine/*": ["./packages/form-engine/*"],
-      "@auth": ["./packages/auth/index.ts"],
-      "@auth/*": ["./packages/auth/*"],
-      "@native": ["./packages/native/index.ts"],
-      "@native/*": ["./packages/native/*"],
-      "@modules/*": ["./modules/*"],
-      "@db/*": ["./db/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@ui": [
+        "./packages/ui/index.ts"
+      ],
+      "@ui/*": [
+        "./packages/ui/*"
+      ],
+      "@config-engine": [
+        "./packages/config-engine/index.ts"
+      ],
+      "@config-engine/*": [
+        "./packages/config-engine/*"
+      ],
+      "@form-engine": [
+        "./packages/form-engine/index.ts"
+      ],
+      "@form-engine/*": [
+        "./packages/form-engine/*"
+      ],
+      "@auth": [
+        "./packages/auth/index.ts"
+      ],
+      "@auth/*": [
+        "./packages/auth/*"
+      ],
+      "@native": [
+        "./packages/native/index.ts"
+      ],
+      "@native/*": [
+        "./packages/native/*"
+      ],
+      "@modules/*": [
+        "./modules/*"
+      ],
+      "@db/*": [
+        "./db/*"
+      ]
     }
   },
   "include": [
@@ -40,7 +70,11 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".next-dash/types/**/*.ts",
+    ".next-dash/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

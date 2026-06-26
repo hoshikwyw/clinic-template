@@ -13,6 +13,29 @@
     "appointments": "Appointments",
     "profile": "Profile"
   },
+  "appointments": {
+    "title": "My appointments",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "empty": "You have no appointments yet.",
+    "bookOne": "Book an appointment",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling…",
+    "cancelWindow": "Too late to cancel online — please call the clinic.",
+    "cancelFailed": "Could not cancel. Please try again."
+  },
+  "profile": {
+    "title": "My profile",
+    "subtitle": "Keep your details up to date.",
+    "fullName": "Full name",
+    "phone": "Phone number",
+    "email": "Email",
+    "dateOfBirth": "Date of birth",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Profile updated.",
+    "saveFailed": "Could not save. Please try again."
+  },
   "portal": {
     "welcome": "Welcome",
     "greeting": "Hi, {name}",

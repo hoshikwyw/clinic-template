@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getClinicConfig } from "@/config/clinic";
+import { getSessionUser } from "@auth";
 import { AccessibilityToolbar, LanguageSwitcher } from "@ui";
+import { PortalNav } from "./portal-nav";
 
 /**
  * Patient / Staff app shell — wraps everything under this route group.
@@ -9,13 +11,14 @@ import { AccessibilityToolbar, LanguageSwitcher } from "@ui";
  * role + RLS). It is the zone Capacitor packages into Android + PWA.
  *
  * Mobile-first, WCAG 2.1 AA. The accessibility toolbar (text size + contrast)
- * lives here so it's reachable from every patient screen. See
- * docs/04-ui-ux-system.md.
+ * lives here so it's reachable from every patient screen. Logged-in patients
+ * get the bottom nav (Home / Appointments / Profile). See docs/04-ui-ux-system.md.
  */
-export default function PortalLayout({
+export default async function PortalLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const config = getClinicConfig();
+  const user = await getSessionUser();
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -32,7 +35,12 @@ export default function PortalLayout({
           <AccessibilityToolbar />
         </div>
       </header>
-      <main className="mx-auto w-full max-w-2xl flex-1 p-4">{children}</main>
+      <main
+        className={`mx-auto w-full max-w-2xl flex-1 p-4 ${user ? "pb-24" : ""}`}
+      >
+        {children}
+      </main>
+      {user && <PortalNav />}
     </div>
   );
 }
