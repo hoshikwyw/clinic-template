@@ -3,13 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FormRenderer, type FormSchema } from "@form-engine";
 import { signIn } from "./actions";
-
-const SCHEMA: FormSchema = [
-  { name: "email", label: "Email", type: "email", required: true },
-  { name: "password", label: "Password", type: "password", required: true },
-];
 
 export interface LoginFormProps {
   /** where to go after a successful login */
@@ -22,15 +18,21 @@ export function LoginForm({
   redirectTo = "/portal",
   signupHref = "/signup",
 }: LoginFormProps) {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
+
+  const schema: FormSchema = [
+    { name: "email", label: t("email"), type: "email", required: true },
+    { name: "password", label: t("password"), type: "password", required: true },
+  ];
 
   return (
     <div className="space-y-4">
       {error && <p className="text-sm font-medium text-destructive">{error}</p>}
       <FormRenderer
-        schema={SCHEMA}
-        submitLabel="Log in"
+        schema={schema}
+        submitLabel={t("logIn")}
         onSubmit={async (v) => {
           setError(null);
           const res = await signIn({
@@ -41,15 +43,15 @@ export function LoginForm({
             router.push(redirectTo);
             router.refresh();
           } else {
-            setError(res.error ?? "Login failed");
+            setError(res.error ?? t("loginFailed"));
           }
         }}
       />
       {signupHref && (
         <p className="text-sm text-muted-foreground">
-          No account?{" "}
+          {t("noAccount")}{" "}
           <Link href={signupHref} className="font-medium underline">
-            Sign up
+            {t("signUp")}
           </Link>
         </p>
       )}

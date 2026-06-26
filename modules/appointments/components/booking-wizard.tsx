@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@ui/primitives/button";
 import {
   Card,
@@ -42,6 +43,7 @@ export function BookingWizard({
   timeZone,
   currency,
 }: BookingWizardProps) {
+  const t = useTranslations("booking");
   const hasIntake = intakeForm.length > 0;
   const steps: StepKey[] = [
     "service",
@@ -145,17 +147,15 @@ export function BookingWizard({
         <CardContent className="space-y-3 py-8 text-center">
           <p className="text-3xl">✓</p>
           <h2 className="text-xl font-semibold text-primary">
-            Appointment requested
+            {t("requested")}
           </h2>
           <p className="text-muted-foreground">
             {result.serviceName} ·{" "}
             {result.startIso ? formatWhen(result.startIso) : ""}
           </p>
-          <p className="text-sm text-muted-foreground">
-            We&apos;ll contact you to confirm. Please keep your phone reachable.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("contactNote")}</p>
           <Button onClick={reset} variant="outline" size="lg" className="mt-2">
-            Book another
+            {t("bookAnother")}
           </Button>
         </CardContent>
       </Card>
@@ -163,11 +163,11 @@ export function BookingWizard({
   }
 
   const stepTitles: Record<StepKey, string> = {
-    service: "Choose a service",
-    when: "Pick a time",
-    details: "Your details",
-    intake: "A few questions",
-    review: "Review & confirm",
+    service: t("stepService"),
+    when: t("stepWhen"),
+    details: t("stepDetails"),
+    intake: t("stepIntake"),
+    review: t("stepReview"),
   };
 
   return (
@@ -177,7 +177,10 @@ export function BookingWizard({
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium">{stepTitles[step]}</span>
           <span className="text-muted-foreground">
-            Step {stepIndex + 1} of {steps.length}
+            {t("stepProgress", {
+              current: stepIndex + 1,
+              total: steps.length,
+            })}
           </span>
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -200,7 +203,8 @@ export function BookingWizard({
               <span>
                 <span className="block font-medium">{s.name}</span>
                 <span className="block text-sm text-muted-foreground">
-                  {s.durationMinutes} min{s.price ? ` · ${money(s.price)}` : ""}
+                  {s.durationMinutes} {t("minUnit")}
+                  {s.price ? ` · ${money(s.price)}` : ""}
                 </span>
               </span>
               <span aria-hidden className="text-primary">
@@ -214,12 +218,10 @@ export function BookingWizard({
       {step === "when" && (
         <div className="space-y-4">
           {loadingSlots && (
-            <p className="text-sm text-muted-foreground">Finding times…</p>
+            <p className="text-sm text-muted-foreground">{t("findingTimes")}</p>
           )}
           {!loadingSlots && days && days.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No available times in the booking window.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("noTimes")}</p>
           )}
           {!loadingSlots && days && days.length > 0 && (
             <>
@@ -262,10 +264,10 @@ export function BookingWizard({
           )}
           <div className="flex justify-between pt-2">
             <Button variant="ghost" onClick={back}>
-              Back
+              {t("back")}
             </Button>
             <Button size="lg" disabled={!slot} onClick={next}>
-              Continue
+              {t("continue")}
             </Button>
           </div>
         </div>
@@ -276,14 +278,14 @@ export function BookingWizard({
           <FormRenderer
             schema={contactForm}
             defaultValues={contact ?? undefined}
-            submitLabel="Continue"
+            submitLabel={t("continue")}
             onSubmit={(values) => {
               setContact(values);
               next();
             }}
           />
           <Button variant="ghost" onClick={back}>
-            Back
+            {t("back")}
           </Button>
         </div>
       )}
@@ -293,14 +295,14 @@ export function BookingWizard({
           <FormRenderer
             schema={intakeForm}
             defaultValues={intake ?? undefined}
-            submitLabel="Continue"
+            submitLabel={t("continue")}
             onSubmit={(values) => {
               setIntake(values);
               next();
             }}
           />
           <Button variant="ghost" onClick={back}>
-            Back
+            {t("back")}
           </Button>
         </div>
       )}
@@ -309,16 +311,16 @@ export function BookingWizard({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Booking summary</CardTitle>
+              <CardTitle className="text-base">{t("summary")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <Row label="Service" value={service?.name ?? ""} />
+              <Row label={t("service")} value={service?.name ?? ""} />
               <Row
-                label="When"
+                label={t("when")}
                 value={slot ? formatWhen(slot.startIso) : ""}
               />
-              <Row label="Name" value={String(contact?.fullName ?? "")} />
-              <Row label="Phone" value={String(contact?.phone ?? "")} />
+              <Row label={t("name")} value={String(contact?.fullName ?? "")} />
+              <Row label={t("phone")} value={String(contact?.phone ?? "")} />
             </CardContent>
           </Card>
 
@@ -330,10 +332,10 @@ export function BookingWizard({
 
           <div className="flex justify-between">
             <Button variant="ghost" onClick={back} disabled={submitting}>
-              Back
+              {t("back")}
             </Button>
             <Button size="lg" onClick={confirm} disabled={submitting}>
-              {submitting ? "Booking…" : "Confirm booking"}
+              {submitting ? t("booking") : t("confirm")}
             </Button>
           </div>
         </div>

@@ -3,26 +3,28 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FormRenderer, type FormSchema } from "@form-engine";
 import { signUp } from "@auth/actions";
 
-const SCHEMA: FormSchema = [
-  { name: "fullName", label: "Full name", type: "text", required: true },
-  { name: "phone", label: "Phone number", type: "phone", required: true },
-  { name: "email", label: "Email", type: "email", required: true },
-  {
-    name: "password",
-    label: "Password",
-    type: "password",
-    required: true,
-    description: "At least 6 characters.",
-  },
-];
-
 export function SignupForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
   const [info, setInfo] = React.useState<string | null>(null);
+
+  const schema: FormSchema = [
+    { name: "fullName", label: t("fullName"), type: "text", required: true },
+    { name: "phone", label: t("phone"), type: "phone", required: true },
+    { name: "email", label: t("email"), type: "email", required: true },
+    {
+      name: "password",
+      label: t("password"),
+      type: "password",
+      required: true,
+      description: t("passwordHint"),
+    },
+  ];
 
   if (info) {
     return <p className="text-sm font-medium text-primary">{info}</p>;
@@ -32,8 +34,8 @@ export function SignupForm() {
     <div className="space-y-4">
       {error && <p className="text-sm font-medium text-destructive">{error}</p>}
       <FormRenderer
-        schema={SCHEMA}
-        submitLabel="Create account"
+        schema={schema}
+        submitLabel={t("createAccount")}
         onSubmit={async (v) => {
           setError(null);
           const res = await signUp({
@@ -43,13 +45,11 @@ export function SignupForm() {
             password: String(v.password),
           });
           if (!res.ok) {
-            setError(res.error ?? "Sign up failed");
+            setError(res.error ?? t("signupFailed"));
             return;
           }
           if (res.needsConfirmation) {
-            setInfo(
-              "Account created. Check your email to confirm, then log in."
-            );
+            setInfo(t("confirmEmailInfo"));
             return;
           }
           router.push("/portal");
@@ -57,9 +57,9 @@ export function SignupForm() {
         }}
       />
       <p className="text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {t("haveAccount")}{" "}
         <Link href="/login" className="font-medium underline">
-          Log in
+          {t("logIn")}
         </Link>
       </p>
     </div>
