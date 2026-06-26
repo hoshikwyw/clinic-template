@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { brandingToStyle } from "@ui/theme/branding";
+import { ServiceWorkerRegister } from "./sw-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,6 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s · ${config.branding.name}`,
     },
     description: `Book an appointment at ${config.branding.name}.`,
+    icons: { icon: "/icon.svg", apple: "/icon.svg" },
   };
 }
 
@@ -67,6 +69,7 @@ export default async function RootLayout({
         style={brandingToStyle(config.branding)}
       >
         <script dangerouslySetInnerHTML={{ __html: A11Y_INIT }} />
+        <ServiceWorkerRegister />
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>
