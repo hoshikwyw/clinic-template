@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { Sun, Moon, Monitor } from "lucide-react";
 import { setLocale } from "@/lib/i18n/actions";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,17 @@ const SIZES: { value: Scale; label: string }[] = [
   { value: "lg", label: "A+" },
   { value: "xl", label: "A++" },
 ];
+
+type Theme = "light" | "dark" | "system";
+const THEMES: { value: Theme; labelKey: string; Icon: typeof Sun }[] = [
+  { value: "light", labelKey: "themeLight", Icon: Sun },
+  { value: "dark", labelKey: "themeDark", Icon: Moon },
+  { value: "system", labelKey: "themeSystem", Icon: Monitor },
+];
+
+function prefersDark() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
 
 /**
  * Settings panel — language, text size, and high-contrast controls, rendered
@@ -32,13 +44,28 @@ export function SettingsPanel({ languages }: { languages: string[] }) {
   const [, startTransition] = React.useTransition();
   const [scale, setScale] = React.useState<Scale>("base");
   const [contrast, setContrast] = React.useState(false);
+  const [theme, setTheme] = React.useState<Theme>("system");
 
   // Reflect whatever the no-FOUC init script already applied.
   React.useEffect(() => {
     const d = document.documentElement.dataset;
     setScale((d.fontScale as Scale) || "base");
     setContrast(d.contrast === "high");
+    try {
+      setTheme((localStorage.getItem("theme") as Theme) || "system");
+    } catch {}
   }, []);
+
+  function applyTheme(value: Theme) {
+    const root = document.documentElement;
+    try {
+      if (value === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", value);
+    } catch {}
+    const dark = value === "dark" || (value === "system" && prefersDark());
+    root.classList.toggle("dark", dark);
+    setTheme(value);
+  }
 
   function applyScale(s: Scale) {
     const root = document.documentElement;
@@ -98,6 +125,29 @@ export function SettingsPanel({ languages }: { languages: string[] }) {
           </div>
         </section>
       )}
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium">{t("theme")}</h2>
+        <div className="flex gap-2">
+          {THEMES.map(({ value, labelKey, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => applyTheme(value)}
+              aria-pressed={theme === value}
+              className={cn(
+                "flex min-h-11 flex-1 flex-col items-center justify-center gap-1 rounded-lg border text-xs font-medium",
+                theme === value
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border hover:bg-muted"
+              )}
+            >
+              <Icon className="size-4" aria-hidden />
+              {t(labelKey)}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="space-y-2">
         <h2 className="text-sm font-medium">{t("textSize")}</h2>

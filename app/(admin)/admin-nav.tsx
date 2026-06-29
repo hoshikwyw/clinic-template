@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { CalendarDays, Users, UserCog, Settings } from "lucide-react";
+import { CalendarDays, Users, UserCog, Settings, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Admin sidebar navigation. The Staff link is admin-only. */
@@ -11,11 +11,13 @@ export function AdminNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const tp = useTranslations("adminPatients");
   const ts = useTranslations("adminStaff");
+  const tr = useTranslations("reports");
   const tset = useTranslations("settings");
 
   const items = [
     { href: "/admin", label: tp("navAppointments"), Icon: CalendarDays },
     { href: "/admin/patients", label: tp("navPatients"), Icon: Users },
+    { href: "/admin/reports", label: tr("navReports"), Icon: BarChart3 },
     ...(isAdmin
       ? [{ href: "/admin/staff", label: ts("navStaff"), Icon: UserCog }]
       : []),

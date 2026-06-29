@@ -14,6 +14,11 @@
     "profile": "Profile",
     "settings": "Settings"
   },
+  "realtime": {
+    "newAppointment": "New appointment booked",
+    "confirmed": "Your appointment is confirmed",
+    "completed": "Your appointment is complete"
+  },
   "appointments": {
     "title": "My appointments",
     "upcoming": "Upcoming",
@@ -115,6 +120,10 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "theme": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
     "textSize": "Text size",
     "highContrast": "High contrast"
   },
@@ -155,6 +164,15 @@
     "confirmed": "Confirmed",
     "completed": "Completed",
     "cancelled": "Cancelled"
+  },
+  "reports": {
+    "navReports": "Reports",
+    "title": "Reports",
+    "total": "Total appointments",
+    "byStatus": "By status",
+    "byService": "Top services",
+    "last14": "Bookings — last 14 days",
+    "noData": "No appointments yet."
   },
   "adminPatients": {
     "navAppointments": "Appointments",

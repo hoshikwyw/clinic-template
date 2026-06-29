@@ -5,6 +5,7 @@ import { getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { brandingToStyle } from "@ui/theme/branding";
 import { ServiceWorkerRegister } from "./sw-register";
+import { ThemeListener } from "./theme-listener";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,8 +49,8 @@ export const viewport: Viewport = {
   ],
 };
 
-// Applies saved accessibility prefs before paint, so there's no flash.
-const A11Y_INIT = `(function(){try{var d=document.documentElement.dataset;var f=localStorage.getItem('a11y-font');if(f)d.fontScale=f;if(localStorage.getItem('a11y-contrast')==='high')d.contrast='high';}catch(e){}})();`;
+// Applies saved prefs (text size, contrast, dark theme) before paint — no flash.
+const PREFS_INIT = `(function(){try{var el=document.documentElement,d=el.dataset;var f=localStorage.getItem('a11y-font');if(f)d.fontScale=f;if(localStorage.getItem('a11y-contrast')==='high')d.contrast='high';var th=localStorage.getItem('theme');if(th==='dark'||(!th&&matchMedia('(prefers-color-scheme: dark)').matches))el.classList.add('dark');}catch(e){}})();`;
 
 export default async function RootLayout({
   children,
@@ -68,8 +69,9 @@ export default async function RootLayout({
         className="flex min-h-full flex-col"
         style={brandingToStyle(config.branding)}
       >
-        <script dangerouslySetInnerHTML={{ __html: A11Y_INIT }} />
+        <script dangerouslySetInnerHTML={{ __html: PREFS_INIT }} />
         <ServiceWorkerRegister />
+        <ThemeListener />
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>

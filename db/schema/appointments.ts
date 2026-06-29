@@ -56,6 +56,13 @@ export const appointments = pgTable(
       to: "authenticated",
       using: sql`exists (select 1 from public.patients p where p.id = ${t.patientId} and p.auth_user_id = auth.uid())`,
     }),
+    // Staff may read all appointments (role from the secure JWT app_metadata).
+    // This also lets the staff browser receive Realtime events under RLS.
+    pgPolicy("appointments_staff_select", {
+      for: "select",
+      to: "authenticated",
+      using: sql`(auth.jwt() -> 'app_metadata' ->> 'role') in ('admin', 'doctor', 'staff')`,
+    }),
   ]
 ).enableRLS();
 

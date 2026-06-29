@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
+import { Toaster } from "sonner";
 import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { PortalNav } from "./portal-nav";
+import { PatientRealtimeNotifier } from "./patient-realtime";
 
 /**
  * Patient / Staff app shell — wraps everything under this route group.
@@ -49,6 +51,8 @@ export default async function PortalLayout({
         {children}
       </main>
       {user && <PortalNav />}
+      <Toaster position="top-center" richColors />
+      {user && <PatientRealtimeNotifier />}
     </div>
   );
 }

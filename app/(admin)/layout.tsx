@@ -1,6 +1,8 @@
+import { Toaster } from "sonner";
 import { getTranslations } from "next-intl/server";
-import { getSessionUser, isAdmin } from "@auth";
+import { getSessionUser, isAdmin, isStaff } from "@auth";
 import { AdminNav } from "./admin-nav";
+import { RealtimeNotifier } from "./realtime-notifier";
 
 /**
  * Admin Dashboard shell — wraps everything under this route group.
@@ -14,6 +16,7 @@ export default async function AdminLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const t = await getTranslations("admin");
   const user = await getSessionUser();
+  const staff = user ? isStaff(user.role) : false;
 
   return (
     <div className="flex min-h-dvh flex-col sm:flex-row">
@@ -22,6 +25,9 @@ export default async function AdminLayout({
         <AdminNav isAdmin={user ? isAdmin(user.role) : false} />
       </aside>
       <main className="min-w-0 flex-1 p-4">{children}</main>
+      <Toaster position="top-right" richColors />
+      {/* Live new-appointment alerts for staff (Supabase Realtime). */}
+      {staff && <RealtimeNotifier />}
     </div>
   );
 }

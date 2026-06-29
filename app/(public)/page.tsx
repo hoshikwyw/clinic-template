@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { Settings, Phone, Mail, MapPin, Clock } from "lucide-react";
+import {
+  Settings,
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  CalendarPlus,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { formatOpenDays } from "@/lib/hours";
@@ -85,22 +92,25 @@ export default async function PublicHome() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Link
               href="/login"
-              className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline"
+              className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline"
             >
               {t("logIn")}
             </Link>
             <Link href="/book">
-              <Button size="sm">{t("book")}</Button>
+              <Button size="sm" className="gap-1.5 rounded-lg shadow-sm">
+                <CalendarPlus className="size-4" aria-hidden />
+                {t("book")}
+              </Button>
             </Link>
             <Link
               href="/settings"
               aria-label={tset("title")}
-              className="inline-flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <Settings className="size-4" aria-hidden />
+              <Settings className="size-5" aria-hidden />
             </Link>
           </div>
         </div>
