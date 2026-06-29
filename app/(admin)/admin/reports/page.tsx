@@ -2,21 +2,13 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
 import { getReportData } from "@modules/appointments/server/reports";
+import { STATUS_STYLES, STATUS_ORDER } from "@/lib/status-styles";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@ui/primitives/card";
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-muted text-muted-foreground",
-  confirmed: "bg-primary/10 text-primary",
-  completed:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
-  cancelled: "bg-muted text-muted-foreground line-through",
-};
-const STATUS_ORDER = ["pending", "confirmed", "completed", "cancelled"];
 
 /** Admin reports — appointment analytics. Staff only. */
 export default async function ReportsPage() {

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { isModuleEnabled } from "@config-engine";
+import { STATUS_STYLES } from "@/lib/status-styles";
 import { getSessionUser, isStaff } from "@auth";
 import { signOut } from "@auth/actions";
 import {
@@ -34,15 +35,10 @@ async function changeStatus(formData: FormData) {
 }
 
 function StatusBadge({ status, label }: { status: string; label: string }) {
-  const styles: Record<string, string> = {
-    pending: "bg-muted text-muted-foreground",
-    confirmed: "bg-primary/10 text-primary",
-    completed:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
-    cancelled: "bg-muted text-muted-foreground line-through",
-  };
   return (
-    <span className={`rounded-md px-2 py-0.5 text-xs ${styles[status] ?? ""}`}>
+    <span
+      className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[status] ?? ""}`}
+    >
       {label}
     </span>
   );

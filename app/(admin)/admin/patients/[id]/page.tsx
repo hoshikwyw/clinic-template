@@ -4,20 +4,13 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
 import { getPatientDetail } from "@modules/patients/server/admin";
 import { getClinicConfig } from "@/config/clinic";
+import { STATUS_STYLES } from "@/lib/status-styles";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@ui/primitives/card";
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-muted text-muted-foreground",
-  confirmed: "bg-primary/10 text-primary",
-  completed:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
-  cancelled: "bg-muted text-muted-foreground line-through",
-};
 
 function renderValue(value: unknown): string {
   if (value === true) return "✓";
