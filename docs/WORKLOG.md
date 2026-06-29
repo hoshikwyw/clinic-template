@@ -6,6 +6,67 @@
 
 ---
 
+## 2026-06-29
+
+**Session focus:** Polished the public site into a real marketing landing page,
+added Supabase Realtime notifications (staff + patient), admin reports, and dark
+mode.
+
+### Decisions made
+- **Realtime via Supabase `postgres_changes`** — staff get live new-booking
+  toasts; patients get live confirmation toasts. Required a **staff-select RLS
+  policy** (role from the JWT `app_metadata`) + adding `appointments` to the
+  `supabase_realtime` publication so the staff browser receives events under RLS.
+  Patient side reused the existing self-select RLS (no DB change).
+- **Dark mode = Light / Dark / System** — activates the already-defined `.dark`
+  token set; same no-FOUC localStorage pattern as the a11y prefs; system mode
+  follows the OS live.
+- **Landing map = Google Maps no-key embed** driven by config
+  `contact.coordinates` (falls back to geocoding `address`). No API key.
+- **Status badge styling extracted** to a single `lib/status-styles.ts` (had been
+  duplicated across 5 files).
+
+### Done / changed
+- **Public landing redesign** — config-driven `about` + `doctors` (team cards);
+  modern hero (gradient, specialty pill, Book + Call), services cards,
+  Visit/contact section with an **embedded map** + "Get directions"; **sticky
+  header** with brand mark, smooth-scroll section nav (#services/#team/#contact),
+  and an always-visible **Book** CTA; refined header action styling.
+- **Realtime** — `RealtimeNotifier` (admin: new appointment) +
+  `PatientRealtimeNotifier` (portal: confirmed/completed); `sonner` toasts +
+  `<Toaster>`. Uses the browser Supabase client (previously unused).
+- **DB** — migration `0003` (appointments staff-select RLS policy + `ALTER
+  PUBLICATION supabase_realtime`) generated **and applied to live Supabase**;
+  verified publication + both policies present.
+- **Admin reports** — `/admin/reports` (total, by-status, 14-day daily bar chart,
+  top services) via `getReportData` aggregation; added to admin nav.
+- **Dark mode** — Theme toggle in `SettingsPanel`; root-layout pre-paint init
+  extended; `ThemeListener` for OS changes; fixed hardcoded `completed` badge
+  colors to be dark-aware (5 views).
+- **Refactor** — shared `lib/status-styles.ts`; `lib/hours.ts` (extracted) reused
+  by landing + help. New `npm run public` dev script (port 5122).
+- Build green throughout; 22 Vitest tests still pass.
+
+### Still open (see 07-open-decisions.md)
+- **Burmese strings are Claude's translations** — native review pending (now also
+  covers landing, reports, realtime, dark mode).
+- **Live DB has migrations 0002 (`patients.locale`) + 0003 (staff RLS + realtime
+  publication)** applied — re-run `pnpm db:migrate` if the DB is ever reset.
+- **Telehealth public Jitsi**, **rate-limit public booking**, **audit logging** —
+  still recommended before real PHI.
+- **Realtime not click-tested end-to-end** this session (dev servers were down);
+  verified at the DB + build level. Worth a live two-window test.
+- Open decisions #3 Play Store · #5 Compliance bar/region.
+
+### Next session should
+- **Commit** the realtime / reports / dark-mode / refactor work. Live-test
+  realtime in two windows (book as patient → staff toast; staff confirm →
+  patient toast). Then optionally: staff appointment notes (unused `notes`
+  column), a notification center, native Burmese review, or rate-limiting / audit
+  logging.
+
+---
+
 ## 2026-06-26
 
 > Two sessions this date — newest first.
