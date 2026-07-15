@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { getSessionUser, type UserRole } from "@auth";
+import { requireAdmin, type UserRole } from "@auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -9,12 +9,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * require the caller to be an admin (not just any staff). Roles live in the
  * secure app_metadata (set via the service role), never user_metadata.
  */
-
-async function requireAdmin() {
-  const user = await getSessionUser();
-  if (!user || user.role !== "admin") throw new Error("Not authorized");
-  return user;
-}
 
 export interface StaffMember {
   id: string;
