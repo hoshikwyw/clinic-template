@@ -17,7 +17,14 @@ import { smileDental } from "./clinics/smile-dental";
 // deploy a different clinic.
 const activeClinic = smileDental;
 
-/** Load + validate this deployment's clinic config (defaults applied). */
+/**
+ * Load + validate this deployment's clinic config (defaults applied).
+ *
+ * Single-tenant + config-in-code means the result is static for the process
+ * lifetime, so we validate once and memoize. Avoids re-running full Zod parse
+ * on every request/consumer (i18n, every server action, every page).
+ */
+let cached: ClinicConfig | undefined;
 export function getClinicConfig(): ClinicConfig {
-  return parseClinicConfig(activeClinic);
+  return (cached ??= parseClinicConfig(activeClinic));
 }

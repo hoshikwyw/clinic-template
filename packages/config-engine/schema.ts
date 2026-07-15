@@ -34,13 +34,18 @@ export const brandingSchema = z.object({
 });
 export type Branding = z.infer<typeof brandingSchema>;
 
-export const localeSchema = z.object({
-  /** enabled language codes, e.g. ["en", "my"] */
-  languages: z.array(z.string()).min(1),
-  defaultLang: z.string().min(1),
-  timezone: z.string().min(1),
-  currency: z.string().min(1),
-});
+export const localeSchema = z
+  .object({
+    /** enabled language codes, e.g. ["en", "my"] */
+    languages: z.array(z.string()).min(1),
+    defaultLang: z.string().min(1),
+    timezone: z.string().min(1),
+    currency: z.string().min(1),
+  })
+  .refine((l) => l.languages.includes(l.defaultLang), {
+    error: "defaultLang must be one of the enabled languages",
+    path: ["defaultLang"],
+  });
 export type Locale = z.infer<typeof localeSchema>;
 
 /** Toggleable feature modules — a clinic enables only what it needs. */
@@ -80,16 +85,23 @@ const timeOfDay = z
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be HH:MM (24h)");
 
 /** Weekly opening hours — drives bookable time slots. */
-export const businessHoursSchema = z.object({
-  /** open weekdays: 0=Sun, 1=Mon … 6=Sat */
-  openDays: z.array(z.number().int().min(0).max(6)).default([1, 2, 3, 4, 5]),
-  openTime: timeOfDay.default("09:00"),
-  closeTime: timeOfDay.default("17:00"),
-  /** granularity of bookable slots, in minutes */
-  slotMinutes: z.number().int().positive().default(30),
-  /** how many days ahead patients may book */
-  bookingHorizonDays: z.number().int().positive().default(30),
-});
+export const businessHoursSchema = z
+  .object({
+    /** open weekdays: 0=Sun, 1=Mon … 6=Sat */
+    openDays: z.array(z.number().int().min(0).max(6)).default([1, 2, 3, 4, 5]),
+    openTime: timeOfDay.default("09:00"),
+    closeTime: timeOfDay.default("17:00"),
+    /** granularity of bookable slots, in minutes */
+    slotMinutes: z.number().int().positive().default(30),
+    /** how many days ahead patients may book */
+    bookingHorizonDays: z.number().int().positive().default(30),
+  })
+  // Zero-padded "HH:MM" (24h) sort lexicographically == chronologically. An
+  // inverted range would silently yield zero bookable slots.
+  .refine((h) => h.openTime < h.closeTime, {
+    error: "openTime must be earlier than closeTime",
+    path: ["closeTime"],
+  });
 export type BusinessHours = z.infer<typeof businessHoursSchema>;
 
 /**
@@ -108,7 +120,7 @@ export type BookingContact = z.infer<typeof bookingContactSchema>;
 /** Clinic contact details, shown on the help/contact page + landing map. */
 export const contactInfoSchema = z.object({
   phone: z.string().optional(),
-  email: z.string().optional(),
+  email: z.email().optional(),
   address: z.string().optional(),
   /** precise map pin; if omitted, the map falls back to geocoding `address` */
   coordinates: z.object({ lat: z.number(), lng: z.number() }).optional(),
@@ -131,7 +143,7 @@ export const doctorSchema = z.object({
 });
 export type Doctor = z.infer<typeof doctorSchema>;
 
-export const clinicConfigSchema = z.object({
+const clinicConfigBaseSchema = z.object({
   id: z.string().min(1),
   /** URL-safe identifier, e.g. "smile-dental" */
   slug: z.string().min(1),
@@ -153,6 +165,41 @@ export const clinicConfigSchema = z.object({
   doctors: z.array(doctorSchema).default([]),
   staffRoles: z.array(z.string()).default([]),
 });
+
+/**
+ * Cross-field invariants that isolated field validation can't catch — these are
+ * the config mistakes that break the app silently at runtime, so we fail loudly
+ * at load instead. See docs/02-architecture.md ("the brain").
+ */
+export const clinicConfigSchema = clinicConfigBaseSchema.superRefine(
+  (cfg, ctx) => {
+    // Service ids must be unique — booking looks services up by id.
+    const seen = new Set<string>();
+    cfg.services.forEach((s, i) => {
+      if (seen.has(s.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate service id "${s.id}"`,
+          path: ["services", i, "id"],
+        });
+      }
+      seen.add(s.id);
+    });
+
+    // A telehealth service is meaningless unless the telehealth module is on.
+    if (!cfg.modules.telehealth) {
+      cfg.services.forEach((s, i) => {
+        if (s.telehealth) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Service "${s.id}" is marked telehealth, but modules.telehealth is off`,
+            path: ["services", i, "telehealth"],
+          });
+        }
+      });
+    }
+  }
+);
 /** Output type (after parse — defaults applied). Use this everywhere downstream. */
 export type ClinicConfig = z.infer<typeof clinicConfigSchema>;
 
