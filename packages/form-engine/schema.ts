@@ -107,7 +107,14 @@ export function buildZodSchema(
           num = num.min(field.min, msg("min", { label, min: field.min }));
         if (field.max !== undefined)
           num = num.max(field.max, msg("max", { label, max: field.max }));
-        validator = field.required ? num : num.optional();
+        // Treat an empty input as "unset", NOT 0. Inputs seed number fields with
+        // "" (see FormRenderer.defaultValueFor); without this, z.coerce.number("")
+        // becomes 0 and an untouched optional number silently submits 0.
+        const emptyToUndefined = (v: unknown) =>
+          v === "" || v === null ? undefined : v;
+        validator = field.required
+          ? z.preprocess(emptyToUndefined, num)
+          : z.preprocess(emptyToUndefined, num.optional());
         break;
       }
       case "password":

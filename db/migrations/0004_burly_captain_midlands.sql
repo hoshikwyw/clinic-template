@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "appointments_active_slot_unique" ON "appointments" USING btree ("start_at") WHERE status <> 'cancelled';

@@ -7,6 +7,7 @@ import {
   text,
   timestamp,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { patients } from "./patients";
 
@@ -51,6 +52,12 @@ export const appointments = pgTable(
   (t) => [
     index("appointments_start_at_idx").on(t.startAt),
     index("appointments_patient_idx").on(t.patientId),
+    // Single-provider MVP: at most one active (non-cancelled) booking per start
+    // time. Makes the booking clash-check atomic at the DB level, closing the
+    // check-then-insert race in createAppointment.
+    uniqueIndex("appointments_active_slot_unique")
+      .on(t.startAt)
+      .where(sql`status <> 'cancelled'`),
     pgPolicy("appointments_self_select", {
       for: "select",
       to: "authenticated",

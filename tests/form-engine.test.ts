@@ -39,6 +39,17 @@ describe("buildZodSchema", () => {
     expect(check(schema, { n: 11 })).toBe(false);
   });
 
+  it("treats an empty optional number as unset, not 0", () => {
+    const schema: FormSchema = [
+      { name: "n", label: "N", type: "number", required: false, min: 1 },
+    ];
+    // Inputs seed number fields with "" — that must stay unset (undefined),
+    // not coerce to 0 (which would also violate min: 1).
+    const parsed = buildZodSchema(schema).safeParse({ n: "" });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.n).toBeUndefined();
+  });
+
   it("restricts select to its option values", () => {
     const schema: FormSchema = [
       {

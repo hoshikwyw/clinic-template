@@ -7,6 +7,7 @@ import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
+import { buildZodSchema } from "@form-engine/schema";
 import { generateDaySlots, type DaySlots } from "@modules/scheduling";
 import {
   notifyAppointmentBooked,
@@ -56,10 +57,20 @@ const createAppointmentInput = z.object({
   contact: z.object({
     fullName: z.string().min(1),
     phone: z.string().min(1),
-    email: z.string().optional(),
+    // Optional, but must be a real address when present ("" = omitted).
+    email: z.union([z.email(), z.literal("")]).optional(),
   }),
   intake: z.record(z.string(), z.unknown()).optional(),
 });
+
+/** Postgres unique-violation (e.g. two bookings racing for the same slot). */
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: string }).code === "23505"
+  );
+}
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentInput>;
 
@@ -84,6 +95,21 @@ export async function createAppointment(
   const config = getClinicConfig();
   const service = config.services.find((s) => s.id === input.serviceId);
   if (!service) return { ok: false, error: "Unknown service." };
+
+  // Validate intake server-side against THIS clinic's form definition. The
+  // client validates too, but never trust it — this rejects crafted payloads
+  // and strips unknown keys before the JSON is stored. If the clinic defines no
+  // intake form, any submitted intake is ignored.
+  let intakeValue: Record<string, unknown> | null = null;
+  if (config.intakeForm.length > 0) {
+    const parsedIntake = buildZodSchema(config.intakeForm).safeParse(
+      input.intake ?? {}
+    );
+    if (!parsedIntake.success) {
+      return { ok: false, error: "Please check the intake form details." };
+    }
+    intakeValue = parsedIntake.data as Record<string, unknown>;
+  }
 
   // Capture the patient's language (validated against the clinic's) so their
   // notification emails go out in the right language.
@@ -131,7 +157,7 @@ export async function createAppointment(
           fullName: input.contact.fullName,
           phone: input.contact.phone,
           email: input.contact.email || null,
-          intake: input.intake ?? null,
+          intake: intakeValue,
           locale: patientLocale,
           updatedAt: new Date(),
         })
@@ -144,7 +170,7 @@ export async function createAppointment(
           fullName: input.contact.fullName,
           phone: input.contact.phone,
           email: input.contact.email || null,
-          intake: input.intake ?? null,
+          intake: intakeValue,
           locale: patientLocale,
         })
         .returning({ id: patients.id });
@@ -157,38 +183,52 @@ export async function createAppointment(
         fullName: input.contact.fullName,
         phone: input.contact.phone,
         email: input.contact.email || null,
-        intake: input.intake ?? null,
+        intake: intakeValue,
         locale: patientLocale,
       })
       .returning({ id: patients.id });
     patientId = guest.id;
   }
 
-  const [appt] = await db
-    .insert(appointments)
-    .values({
-      patientId,
-      serviceId: service.id,
-      serviceName: service.name,
-      startAt,
-      endAt,
-      status: "pending",
-    })
-    .returning({ id: appointments.id, startAt: appointments.startAt });
+  let appointmentId: string;
+  let confirmedStartIso: string;
+  try {
+    const [appt] = await db
+      .insert(appointments)
+      .values({
+        patientId,
+        serviceId: service.id,
+        serviceName: service.name,
+        startAt,
+        endAt,
+        status: "pending",
+      })
+      .returning({ id: appointments.id, startAt: appointments.startAt });
+    appointmentId = appt.id;
+    confirmedStartIso = appt.startAt.toISOString();
+  } catch (err) {
+    // The partial unique index (appointments_active_slot_unique) makes this the
+    // authoritative, race-free clash check — the earlier select is just a fast
+    // path for the common case.
+    if (isUniqueViolation(err)) {
+      return { ok: false, error: "Sorry, that slot was just taken. Pick another." };
+    }
+    throw err;
+  }
 
   await notifyAppointmentBooked({
     to: input.contact.email || null,
     patientName: input.contact.fullName,
     serviceName: service.name,
-    startIso: appt.startAt.toISOString(),
+    startIso: confirmedStartIso,
     locale: patientLocale,
   });
 
   return {
     ok: true,
-    appointmentId: appt.id,
+    appointmentId,
     serviceName: service.name,
-    startIso: appt.startAt.toISOString(),
+    startIso: confirmedStartIso,
   };
 }
 
