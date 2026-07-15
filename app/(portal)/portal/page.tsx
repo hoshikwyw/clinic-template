@@ -1,20 +1,14 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
-import { signOut } from "@auth/actions";
+import { signOutAndRedirect } from "@auth/actions";
 import { getMyAppointments } from "@modules/appointments/server/booking";
-import { STATUS_STYLES } from "@/lib/status-styles";
+import { formatDateTime } from "@/lib/format";
+import { StatusBadge } from "@ui/patterns/status-badge";
 import { Button } from "@ui/primitives/button";
 import { Card, CardContent } from "@ui/primitives/card";
-
-async function handleSignOut() {
-  "use server";
-  await signOut();
-  redirect("/portal");
-}
 
 /**
  * Patient home — an overview, not a task. Shows the next appointment at a glance,
@@ -31,6 +25,9 @@ export default async function PortalHome() {
   const user = await getSessionUser();
   const appointments = user ? await getMyAppointments() : [];
 
+  // Server Component: renders once per request, never re-rendered — reading the
+  // clock here is deterministic (the purity rule targets Client Components).
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const next =
     appointments
@@ -43,14 +40,7 @@ export default async function PortalHome() {
       )[0] ?? null;
 
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat(locale, {
-      timeZone: config.locale.timezone,
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
+    formatDateTime(iso, locale, config.locale.timezone, "long");
 
   const money = (n?: number) =>
     n ? `${n.toLocaleString()} ${config.locale.currency}` : "";
@@ -70,7 +60,7 @@ export default async function PortalHome() {
           </p>
         </div>
         {user ? (
-          <form action={handleSignOut}>
+          <form action={signOutAndRedirect.bind(null, "/portal")}>
             <Button type="submit" variant="outline" size="sm">
               {t("signOut")}
             </Button>
@@ -107,11 +97,7 @@ export default async function PortalHome() {
                     {fmt(next.startIso)}
                   </div>
                 </div>
-                <span
-                  className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[next.status] ?? ""}`}
-                >
-                  {ts(next.status)}
-                </span>
+                <StatusBadge status={next.status} label={ts(next.status)} />
               </div>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">

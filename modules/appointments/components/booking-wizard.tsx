@@ -81,7 +81,6 @@ export function BookingWizard({
       didInit.current = true;
       void chooseService(initialServiceId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialServiceId, services]);
 
   const step = steps[stepIndex];

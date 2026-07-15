@@ -8,8 +8,9 @@ import {
 } from "@modules/appointments/server/booking";
 import { getClinicConfig } from "@/config/clinic";
 import { isModuleEnabled } from "@config-engine";
-import { meetingUrl, isJoinable } from "@modules/telehealth";
-import { STATUS_STYLES } from "@/lib/status-styles";
+import { getTelehealthState } from "@modules/telehealth";
+import { formatDateTime } from "@/lib/format";
+import { StatusBadge } from "@ui/patterns/status-badge";
 import { Button } from "@ui/primitives/button";
 import { CancelButton } from "./cancel-button";
 import { RescheduleControl } from "./reschedule-control";
@@ -30,18 +31,13 @@ export default async function AppointmentsPage() {
   const appts = await getMyAppointments();
   const telehealthOn = isModuleEnabled(config, "telehealth");
 
+  // Server Component: renders once per request, never re-rendered — reading the
+  // clock here is deterministic (the purity rule targets Client Components).
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const windowMs = config.bookingRules.cancellationWindowHours * 3_600_000;
 
-  const fmt = (iso: string) =>
-    new Intl.DateTimeFormat(locale, {
-      timeZone: config.locale.timezone,
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
+  const fmt = (iso: string) => formatDateTime(iso, locale, config.locale.timezone);
 
   const isUpcoming = (a: MyAppointment) =>
     new Date(a.startIso).getTime() >= now && a.status !== "cancelled";
@@ -53,14 +49,15 @@ export default async function AppointmentsPage() {
   const past = appts.filter((a) => !isUpcoming(a));
 
   const Row = ({ a }: { a: MyAppointment }) => {
-    const service = config.services.find((s) => s.id === a.serviceId);
-    const showTele =
-      telehealthOn &&
-      Boolean(service?.telehealth) &&
-      a.status !== "cancelled" &&
-      a.status !== "completed";
-    const joinable =
-      showTele && isJoinable(a.startIso, service!.durationMinutes, now);
+    const tele = getTelehealthState({
+      enabled: telehealthOn,
+      service: config.services.find((s) => s.id === a.serviceId),
+      status: a.status,
+      startIso: a.startIso,
+      appointmentId: a.id,
+      clinicSlug: config.slug,
+      now,
+    });
 
     return (
       <div className="rounded-xl border border-border p-4">
@@ -68,24 +65,17 @@ export default async function AppointmentsPage() {
           <div className="space-y-0.5 text-sm">
             <div className="flex items-center gap-2">
               <span className="font-medium">{a.serviceName}</span>
-              <span
-                className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[a.status] ?? ""}`}
-              >
-                {ts(a.status)}
-              </span>
+              <StatusBadge status={a.status} label={ts(a.status)} />
             </div>
             <div className="text-muted-foreground">{fmt(a.startIso)}</div>
           </div>
         </div>
 
-        {showTele && (
+        {tele.visible && (
           <div className="mt-3">
-            {joinable ? (
+            {tele.joinable ? (
               <a
-                href={meetingUrl({
-                  appointmentId: a.id,
-                  clinicSlug: config.slug,
-                })}
+                href={tele.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex min-h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"

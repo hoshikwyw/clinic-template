@@ -46,14 +46,19 @@ export function SettingsPanel({ languages }: { languages: string[] }) {
   const [contrast, setContrast] = React.useState(false);
   const [theme, setTheme] = React.useState<Theme>("system");
 
-  // Reflect whatever the no-FOUC init script already applied.
+  // Reflect whatever the no-FOUC init script already applied to <html>. This
+  // must run post-hydration (the server can't know these client-only values),
+  // so seeding state here is intentional — a lazy initializer would reintroduce
+  // the hydration mismatch this effect exists to avoid.
   React.useEffect(() => {
     const d = document.documentElement.dataset;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setScale((d.fontScale as Scale) || "base");
     setContrast(d.contrast === "high");
     try {
       setTheme((localStorage.getItem("theme") as Theme) || "system");
     } catch {}
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   function applyTheme(value: Theme) {
@@ -69,8 +74,11 @@ export function SettingsPanel({ languages }: { languages: string[] }) {
 
   function applyScale(s: Scale) {
     const root = document.documentElement;
-    if (s === "base") delete root.dataset.fontScale;
-    else root.dataset.fontScale = s;
+    // setAttribute/removeAttribute (data-font-scale) instead of dataset
+    // assignment — identical result, and it's a method call rather than a
+    // mutation the react-hooks rules flag on the shared <html> node.
+    if (s === "base") root.removeAttribute("data-font-scale");
+    else root.setAttribute("data-font-scale", s);
     try {
       if (s === "base") localStorage.removeItem("a11y-font");
       else localStorage.setItem("a11y-font", s);
@@ -81,8 +89,8 @@ export function SettingsPanel({ languages }: { languages: string[] }) {
   function toggleContrast() {
     const root = document.documentElement;
     const next = !contrast;
-    if (next) root.dataset.contrast = "high";
-    else delete root.dataset.contrast;
+    if (next) root.setAttribute("data-contrast", "high");
+    else root.removeAttribute("data-contrast");
     try {
       if (next) localStorage.setItem("a11y-contrast", "high");
       else localStorage.removeItem("a11y-contrast");

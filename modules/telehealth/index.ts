@@ -41,3 +41,47 @@ export function isJoinable(
   const endsAt = start + durationMinutes * 60_000;
   return now >= opensAt && now <= endsAt;
 }
+
+export interface TelehealthState {
+  /** whether a telehealth affordance should be shown for this appointment */
+  visible: boolean;
+  /** whether the room can be joined right now */
+  joinable: boolean;
+  /** the meeting URL (empty when not visible) */
+  url: string;
+}
+
+/**
+ * Resolve whether/how to show telehealth for one appointment. Centralizes the
+ * gate (module on + service is telehealth + not cancelled/completed) that was
+ * duplicated in the admin and portal views, and removes the fragile non-null
+ * assertion on the service lookup.
+ */
+export function getTelehealthState(opts: {
+  enabled: boolean;
+  service: { telehealth?: boolean; durationMinutes: number } | undefined;
+  status: string;
+  startIso: string;
+  appointmentId: string;
+  clinicSlug: string;
+  now?: number;
+}): TelehealthState {
+  const hidden: TelehealthState = { visible: false, joinable: false, url: "" };
+  if (
+    !opts.enabled ||
+    !opts.service?.telehealth ||
+    opts.status === "cancelled" ||
+    opts.status === "completed"
+  ) {
+    return hidden;
+  }
+  const now = opts.now ?? Date.now();
+  return {
+    visible: true,
+    joinable: isJoinable(opts.startIso, opts.service.durationMinutes, now),
+    url: meetingUrl({
+      appointmentId: opts.appointmentId,
+      clinicSlug: opts.clinicSlug,
+    }),
+  };
+}

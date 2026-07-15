@@ -4,7 +4,8 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
 import { getPatientDetail } from "@modules/patients/server/admin";
 import { getClinicConfig } from "@/config/clinic";
-import { STATUS_STYLES } from "@/lib/status-styles";
+import { formatDateTime } from "@/lib/format";
+import { StatusBadge } from "@ui/patterns/status-badge";
 import {
   Card,
   CardContent,
@@ -36,15 +37,7 @@ export default async function PatientDetailPage({
   const p = await getPatientDetail(id);
   if (!p) notFound();
 
-  const fmt = (iso: string) =>
-    new Intl.DateTimeFormat(locale, {
-      timeZone: config.locale.timezone,
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
+  const fmt = (iso: string) => formatDateTime(iso, locale, config.locale.timezone);
 
   const intakeEntries = p.intake ? Object.entries(p.intake) : [];
 
@@ -113,11 +106,7 @@ export default async function PatientDetailPage({
                     {fmt(a.startIso)}
                   </span>
                 </span>
-                <span
-                  className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLES[a.status] ?? ""}`}
-                >
-                  {ts(a.status)}
-                </span>
+                <StatusBadge status={a.status} label={ts(a.status)} />
               </div>
             ))
           )}

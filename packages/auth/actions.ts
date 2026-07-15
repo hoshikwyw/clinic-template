@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@db/index";
 import { patients } from "@db/schema";
@@ -59,4 +60,14 @@ export async function signUp(input: {
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+}
+
+/**
+ * Sign out and redirect. Use as a form action with the target bound:
+ * `action={signOutAndRedirect.bind(null, "/portal")}`. Replaces the per-zone
+ * inline sign-out actions that differed only in the redirect target.
+ */
+export async function signOutAndRedirect(redirectTo: string): Promise<void> {
+  await signOut();
+  redirect(redirectTo);
 }
