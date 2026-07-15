@@ -6,9 +6,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { requireStaff } from "@auth";
-import { getClinicConfig } from "@/config/clinic";
 import { notifyAppointmentStatus } from "@modules/notifications";
-import { getAvailableSlots } from "./booking";
+import {
+  moveAppointment,
+  toAppointmentDTO,
+  type ActionResult,
+  type AppointmentDTO,
+} from "./core";
 
 /**
  * Staff-only appointment management. Every action calls requireStaff(), which
@@ -16,15 +20,10 @@ import { getAvailableSlots } from "./booking";
  * app_metadata). See packages/auth.
  */
 
-export interface AdminAppointment {
-  id: string;
+export interface AdminAppointment extends AppointmentDTO {
   patientId: string;
   patientName: string;
   patientPhone: string;
-  serviceId: string;
-  serviceName: string;
-  startIso: string;
-  status: string;
 }
 
 /** All appointments with patient contact info (newest first). */
@@ -47,14 +46,10 @@ export async function getAllAppointments(): Promise<AdminAppointment[]> {
     .orderBy(desc(appointments.startAt));
 
   return rows.map((r) => ({
-    id: r.id,
+    ...toAppointmentDTO(r),
     patientId: r.patientId,
     patientName: r.patientName,
     patientPhone: r.patientPhone,
-    serviceId: r.serviceId,
-    serviceName: r.serviceName,
-    startIso: r.startAt.toISOString(),
-    status: r.status,
   }));
 }
 
@@ -107,15 +102,14 @@ export async function updateAppointmentStatus(
   revalidatePath("/admin");
 }
 
-export interface AdminRescheduleResult {
-  ok: boolean;
-  error?: "notFound" | "unavailable" | "invalid";
-}
+export type AdminRescheduleResult = ActionResult<
+  "notFound" | "unavailable" | "invalid"
+>;
 
 /**
  * Staff reschedule an appointment to a new slot (e.g. for a phone booking).
- * Validates the new slot is available for the service; resets to pending +
- * clears the reminder so the new time is re-confirmed and re-reminded.
+ * Staff may move any appointment, so there's no ownership/window check —
+ * delegate slot validation + the write to the shared helper.
  */
 export async function rescheduleAppointment(
   appointmentId: string,
@@ -124,40 +118,13 @@ export async function rescheduleAppointment(
   await requireStaff();
 
   const [row] = await db
-    .select({
-      id: appointments.id,
-      serviceId: appointments.serviceId,
-    })
+    .select({ serviceId: appointments.serviceId })
     .from(appointments)
     .where(eq(appointments.id, appointmentId))
     .limit(1);
   if (!row) return { ok: false, error: "notFound" };
 
-  const service = getClinicConfig().services.find(
-    (s) => s.id === row.serviceId
-  );
-  if (!service) return { ok: false, error: "invalid" };
-
-  const days = await getAvailableSlots(row.serviceId);
-  const available = days.some((d) =>
-    d.slots.some((s) => s.startIso === startIso)
-  );
-  if (!available) return { ok: false, error: "unavailable" };
-
-  const newStart = new Date(startIso);
-  const newEnd = new Date(newStart.getTime() + service.durationMinutes * 60_000);
-
-  await db
-    .update(appointments)
-    .set({
-      startAt: newStart,
-      endAt: newEnd,
-      status: "pending",
-      reminderSentAt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(appointments.id, appointmentId));
-
-  revalidatePath("/admin");
-  return { ok: true };
+  const result = await moveAppointment(appointmentId, row.serviceId, startIso);
+  if (result.ok) revalidatePath("/admin");
+  return result;
 }

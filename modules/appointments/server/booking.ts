@@ -2,17 +2,24 @@
 
 import { z } from "zod";
 import { getLocale } from "next-intl/server";
-import { and, eq, ne, gte, desc } from "drizzle-orm";
+import { and, eq, ne, desc } from "drizzle-orm";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { buildZodSchema } from "@form-engine/schema";
-import { generateDaySlots, type DaySlots } from "@modules/scheduling";
+import type { DaySlots } from "@modules/scheduling";
 import {
   notifyAppointmentBooked,
   notifyAppointmentStatus,
 } from "@modules/notifications";
+import {
+  computeAvailableSlots,
+  isUniqueViolation,
+  moveAppointment,
+  toAppointmentDTO,
+  type AppointmentDTO,
+} from "./core";
 
 /**
  * Booking server actions. Run on a trusted direct DB connection (Drizzle), so
@@ -22,33 +29,7 @@ import {
 
 /** Available slots for a service, with already-booked slots removed. */
 export async function getAvailableSlots(serviceId: string): Promise<DaySlots[]> {
-  const config = getClinicConfig();
-  const service = config.services.find((s) => s.id === serviceId);
-  if (!service) throw new Error("Unknown service");
-
-  const days = generateDaySlots({
-    businessHours: config.businessHours,
-    serviceDurationMinutes: service.durationMinutes,
-    timeZone: config.locale.timezone,
-    leadTimeHours: config.bookingRules.leadTimeHours,
-    locale: await getLocale(),
-  });
-
-  // Remove slots already taken (single-provider MVP: one booking per start time).
-  const booked = await db
-    .select({ startAt: appointments.startAt })
-    .from(appointments)
-    .where(
-      and(
-        ne(appointments.status, "cancelled"),
-        gte(appointments.startAt, new Date())
-      )
-    );
-  const taken = new Set(booked.map((b) => b.startAt.toISOString()));
-
-  return days
-    .map((d) => ({ ...d, slots: d.slots.filter((s) => !taken.has(s.startIso)) }))
-    .filter((d) => d.slots.length > 0);
+  return computeAvailableSlots(serviceId);
 }
 
 const createAppointmentInput = z.object({
@@ -62,15 +43,6 @@ const createAppointmentInput = z.object({
   }),
   intake: z.record(z.string(), z.unknown()).optional(),
 });
-
-/** Postgres unique-violation (e.g. two bookings racing for the same slot). */
-function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    (err as { code?: string }).code === "23505"
-  );
-}
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentInput>;
 
@@ -232,13 +204,7 @@ export async function createAppointment(
   };
 }
 
-export interface MyAppointment {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  startIso: string;
-  status: string;
-}
+export type MyAppointment = AppointmentDTO;
 
 /** Appointments for the currently logged-in patient (newest first). */
 export async function getMyAppointments(): Promise<MyAppointment[]> {
@@ -258,13 +224,7 @@ export async function getMyAppointments(): Promise<MyAppointment[]> {
     .where(eq(patients.authUserId, user.id))
     .orderBy(desc(appointments.startAt));
 
-  return rows.map((r) => ({
-    id: r.id,
-    serviceId: r.serviceId,
-    serviceName: r.serviceName,
-    startIso: r.startAt.toISOString(),
-    status: r.status,
-  }));
+  return rows.map(toAppointmentDTO);
 }
 
 export interface CancelResult {
@@ -374,35 +334,12 @@ export async function rescheduleMyAppointment(
     return { ok: false, error: "notFound" };
   }
 
-  const config = getClinicConfig();
-  const windowMs = config.bookingRules.cancellationWindowHours * 3_600_000;
+  const windowMs =
+    getClinicConfig().bookingRules.cancellationWindowHours * 3_600_000;
   if (row.startAt.getTime() - Date.now() < windowMs) {
     return { ok: false, error: "window" };
   }
 
-  const service = config.services.find((s) => s.id === row.serviceId);
-  if (!service) return { ok: false, error: "invalid" };
-
-  // The new time must be a currently-available slot for this service.
-  const days = await getAvailableSlots(row.serviceId);
-  const available = days.some((d) =>
-    d.slots.some((s) => s.startIso === startIso)
-  );
-  if (!available) return { ok: false, error: "unavailable" };
-
-  const newStart = new Date(startIso);
-  const newEnd = new Date(newStart.getTime() + service.durationMinutes * 60_000);
-
-  await db
-    .update(appointments)
-    .set({
-      startAt: newStart,
-      endAt: newEnd,
-      status: "pending",
-      reminderSentAt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(appointments.id, appointmentId));
-
-  return { ok: true };
+  // Ownership + window verified; delegate slot validation + the write.
+  return moveAppointment(appointmentId, row.serviceId, startIso);
 }

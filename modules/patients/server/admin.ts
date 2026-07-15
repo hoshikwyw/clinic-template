@@ -4,6 +4,10 @@ import { asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@db/index";
 import { patients, appointments } from "@db/schema";
 import { requireStaff } from "@auth";
+import {
+  toAppointmentDTO,
+  type AppointmentDTO,
+} from "@modules/appointments/server/core";
 
 /**
  * Staff-only patient directory. Every action calls requireStaff() (role from
@@ -59,12 +63,7 @@ export interface PatientDetail {
   dateOfBirth: string | null;
   intake: Record<string, unknown> | null;
   hasAccount: boolean;
-  appointments: {
-    id: string;
-    serviceName: string;
-    startIso: string;
-    status: string;
-  }[];
+  appointments: AppointmentDTO[];
 }
 
 /** A single patient with their full record + appointment history. */
@@ -83,6 +82,7 @@ export async function getPatientDetail(
   const appts = await db
     .select({
       id: appointments.id,
+      serviceId: appointments.serviceId,
       serviceName: appointments.serviceName,
       startAt: appointments.startAt,
       status: appointments.status,
@@ -99,11 +99,6 @@ export async function getPatientDetail(
     dateOfBirth: p.dateOfBirth,
     intake: (p.intake as Record<string, unknown> | null) ?? null,
     hasAccount: Boolean(p.authUserId),
-    appointments: appts.map((a) => ({
-      id: a.id,
-      serviceName: a.serviceName,
-      startIso: a.startAt.toISOString(),
-      status: a.status,
-    })),
+    appointments: appts.map(toAppointmentDTO),
   };
 }
