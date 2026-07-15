@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
 import { getReportData } from "@modules/appointments/server/reports";
 import { STATUS_STYLES, STATUS_ORDER } from "@/lib/status-styles";
+import { Skeleton } from "@ui/primitives/skeleton";
 import {
   Card,
   CardContent,
@@ -17,6 +19,20 @@ export default async function ReportsPage() {
   if (!isStaff(user.role)) redirect("/admin");
 
   const t = await getTranslations("reports");
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+      {/* Title renders immediately; the aggregate queries stream in. */}
+      <Suspense fallback={<ReportsSkeleton />}>
+        <ReportsBody />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ReportsBody() {
+  const t = await getTranslations("reports");
   const ts = await getTranslations("status");
   const data = await getReportData();
 
@@ -24,9 +40,7 @@ export default async function ReportsPage() {
   const maxService = Math.max(1, ...data.byService.map((s) => s.count));
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-
+    <>
       {data.total === 0 ? (
         <p className="text-sm text-muted-foreground">{t("noData")}</p>
       ) : (
@@ -107,6 +121,19 @@ export default async function ReportsPage() {
           </Card>
         </>
       )}
+    </>
+  );
+}
+
+function ReportsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24" />
+      </div>
+      <Skeleton className="h-44" />
+      <Skeleton className="h-40" />
     </div>
   );
 }

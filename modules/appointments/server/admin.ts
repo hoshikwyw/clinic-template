@@ -11,6 +11,7 @@ import { notifyAppointmentStatus } from "@modules/notifications";
 import {
   moveAppointment,
   toAppointmentDTO,
+  APPOINTMENTS_PAGE_SIZE,
   type ActionResult,
   type AppointmentDTO,
 } from "./core";
@@ -26,9 +27,6 @@ export interface AdminAppointment extends AppointmentDTO {
   patientName: string;
   patientPhone: string;
 }
-
-/** Default page size for the admin appointments list. */
-export const APPOINTMENTS_PAGE_SIZE = 20;
 
 // Shared select shape + row mapper for the admin appointment lists.
 const adminAppointmentColumns = {

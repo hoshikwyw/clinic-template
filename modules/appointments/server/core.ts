@@ -12,6 +12,9 @@ import { generateDaySlots, type DaySlots } from "@modules/scheduling";
  * duplicate slot availability, the row→DTO mapping, or the move/reschedule flow.
  */
 
+/** Default page size for the admin appointments list. */
+export const APPOINTMENTS_PAGE_SIZE = 20;
+
 /** Generic discriminated result for server actions that can fail. */
 export type ActionResult<E extends string = string> =
   | { ok: true }

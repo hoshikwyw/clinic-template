@@ -2,10 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
-import {
-  getPatientsList,
-  PATIENTS_PAGE_SIZE,
-} from "@modules/patients/server/admin";
+import { getPatientsList } from "@modules/patients/server/admin";
+import { PATIENTS_PAGE_SIZE } from "@modules/patients/pagination";
 import { Button } from "@ui/primitives/button";
 import { Input } from "@ui/primitives/input";
 import { Pagination } from "@ui/patterns/pagination";

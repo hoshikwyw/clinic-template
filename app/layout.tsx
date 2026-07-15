@@ -63,6 +63,10 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
+      // The PREFS_INIT script sets the dark class + data-* on <html> before
+      // hydration; suppress the expected server/client attribute mismatch on
+      // this element (the documented escape hatch for pre-paint theming).
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${notoMyanmar.variable} h-full scroll-smooth antialiased`}
     >
       <body

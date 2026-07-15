@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
@@ -11,6 +12,7 @@ import { isModuleEnabled } from "@config-engine";
 import { getTelehealthState } from "@modules/telehealth";
 import { formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@ui/patterns/status-badge";
+import { Skeleton } from "@ui/primitives/skeleton";
 import { Button } from "@ui/primitives/button";
 import { CancelButton } from "./cancel-button";
 import { RescheduleControl } from "./reschedule-control";
@@ -23,6 +25,22 @@ export default async function AppointmentsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  const t = await getTranslations("appointments");
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight text-primary">
+        {t("title")}
+      </h1>
+      {/* Title renders immediately; the appointment list streams in. */}
+      <Suspense fallback={<AppointmentsSkeleton />}>
+        <AppointmentsBody />
+      </Suspense>
+    </div>
+  );
+}
+
+async function AppointmentsBody() {
   const t = await getTranslations("appointments");
   const ts = await getTranslations("status");
   const tt = await getTranslations("telehealth");
@@ -37,7 +55,9 @@ export default async function AppointmentsPage() {
   const now = Date.now();
   const windowMs = config.bookingRules.cancellationWindowHours * 3_600_000;
 
-  const fmt = (iso: string) => formatDateTime(iso, locale, config.locale.timezone);
+  const fmt = (iso: string) =>
+    formatDateTime(iso, locale, config.locale.timezone);
+  const serviceById = new Map(config.services.map((s) => [s.id, s] as const));
 
   const isUpcoming = (a: MyAppointment) =>
     new Date(a.startIso).getTime() >= now && a.status !== "cancelled";
@@ -51,7 +71,7 @@ export default async function AppointmentsPage() {
   const Row = ({ a }: { a: MyAppointment }) => {
     const tele = getTelehealthState({
       enabled: telehealthOn,
-      service: config.services.find((s) => s.id === a.serviceId),
+      service: serviceById.get(a.serviceId),
       status: a.status,
       startIso: a.startIso,
       appointmentId: a.id,
@@ -103,11 +123,7 @@ export default async function AppointmentsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight text-primary">
-        {t("title")}
-      </h1>
-
+    <>
       {appts.length === 0 && (
         <div className="space-y-4 rounded-xl border border-border p-6 text-center">
           <p className="text-muted-foreground">{t("empty")}</p>
@@ -138,6 +154,16 @@ export default async function AppointmentsPage() {
           ))}
         </section>
       )}
+    </>
+  );
+}
+
+function AppointmentsSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2].map((i) => (
+        <Skeleton key={i} className="h-24" />
+      ))}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   toAppointmentDTO,
   type AppointmentDTO,
 } from "@modules/appointments/server/core";
+import { PATIENTS_PAGE_SIZE } from "@modules/patients/pagination";
 
 /**
  * Staff-only patient directory. Every action calls requireStaff() (role from
@@ -27,9 +28,6 @@ export interface PatientsPage {
   /** total patients matching the search (across all pages) */
   total: number;
 }
-
-/** Default page size for the patient directory. */
-export const PATIENTS_PAGE_SIZE = 20;
 
 /**
  * List patients (paginated), optionally filtered by a name/phone search.
