@@ -74,4 +74,49 @@ describe("buildZodSchema", () => {
     expect(check(schema, { c: true })).toBe(true);
     expect(check(schema, { c: false })).toBe(false);
   });
+
+  it("enforces text minLength/maxLength/pattern", () => {
+    const schema: FormSchema = [
+      {
+        name: "t",
+        label: "T",
+        type: "text",
+        required: true,
+        minLength: 2,
+        maxLength: 4,
+        pattern: "^[a-z]+$",
+      },
+    ];
+    expect(check(schema, { t: "abc" })).toBe(true);
+    expect(check(schema, { t: "a" })).toBe(false); // too short
+    expect(check(schema, { t: "abcde" })).toBe(false); // too long
+    expect(check(schema, { t: "AB1" })).toBe(false); // pattern
+  });
+
+  it("allows empty optional text but validates constraints when filled", () => {
+    const schema: FormSchema = [
+      { name: "t", label: "T", type: "text", required: false, minLength: 3 },
+    ];
+    expect(check(schema, { t: "" })).toBe(true);
+    expect(check(schema, { t: "ab" })).toBe(false);
+    expect(check(schema, { t: "abc" })).toBe(true);
+  });
+
+  it("validates date fields", () => {
+    const schema: FormSchema = [
+      { name: "d", label: "D", type: "date", required: true },
+    ];
+    expect(check(schema, { d: "2026-07-15" })).toBe(true);
+    expect(check(schema, { d: "15/07/2026" })).toBe(false);
+    expect(check(schema, { d: "2026-13-40" })).toBe(false);
+    expect(check(schema, { d: "" })).toBe(false);
+  });
+
+  it("honors a configurable password minimum", () => {
+    const schema: FormSchema = [
+      { name: "p", label: "P", type: "password", required: true, passwordMin: 10 },
+    ];
+    expect(check(schema, { p: "shortpass" })).toBe(false); // 9 chars
+    expect(check(schema, { p: "longenough1" })).toBe(true); // 11 chars
+  });
 });

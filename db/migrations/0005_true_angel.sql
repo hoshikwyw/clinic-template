@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "patients_auth_user_id_unique" ON "patients" USING btree ("auth_user_id") WHERE auth_user_id is not null;

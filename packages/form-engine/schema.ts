@@ -40,9 +40,18 @@ export const fieldDefinitionSchema = z.object({
   description: z.string().optional(),
   /** for select / radio */
   options: z.array(fieldOptionSchema).optional(),
-  /** for number */
+  /** for number: numeric bounds */
   min: z.number().optional(),
   max: z.number().optional(),
+  /** for text / textarea / phone: length bounds */
+  minLength: z.number().int().nonnegative().optional(),
+  maxLength: z.number().int().positive().optional(),
+  /** for text / textarea / phone: regex source the value must match */
+  pattern: z.string().optional(),
+  /** for password: minimum length (default 6) */
+  passwordMin: z.number().int().positive().optional(),
+  /** input autocomplete hint, e.g. "new-password", "email", "tel", "off" */
+  autoComplete: z.string().optional(),
 });
 export type FieldDefinition = z.infer<typeof fieldDefinitionSchema>;
 
@@ -58,11 +67,15 @@ export type ValidationMessageKey =
   | "email"
   | "min"
   | "max"
-  | "passwordMin";
+  | "passwordMin"
+  | "minLength"
+  | "maxLength"
+  | "pattern"
+  | "date";
 
 export type ValidationMessages = (
   key: ValidationMessageKey,
-  values: { label: string; min?: number; max?: number }
+  values: { label: string; min?: number; max?: number; len?: number }
 ) => string;
 
 const defaultMessages: ValidationMessages = (key, v) => {
@@ -77,6 +90,14 @@ const defaultMessages: ValidationMessages = (key, v) => {
       return `${v.label} must be ≤ ${v.max}`;
     case "passwordMin":
       return `${v.label} must be at least ${v.min} characters`;
+    case "minLength":
+      return `${v.label} must be at least ${v.len} characters`;
+    case "maxLength":
+      return `${v.label} must be at most ${v.len} characters`;
+    case "pattern":
+      return `${v.label} is not in the expected format`;
+    case "date":
+      return `${v.label} must be a valid date`;
   }
 };
 
@@ -117,11 +138,23 @@ export function buildZodSchema(
           : z.preprocess(emptyToUndefined, num.optional());
         break;
       }
-      case "password":
+      case "password": {
+        const min = field.passwordMin ?? 6;
         validator = field.required
-          ? z.string().min(6, msg("passwordMin", { label, min: 6 }))
+          ? z.string().min(min, msg("passwordMin", { label, min }))
           : z.string().optional();
         break;
+      }
+      case "date": {
+        const valid = z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, msg("date", { label }))
+          .refine((v) => !Number.isNaN(Date.parse(v)), msg("date", { label }));
+        validator = field.required
+          ? z.string().min(1, msg("required", { label })).pipe(valid)
+          : z.union([z.literal(""), valid]).optional();
+        break;
+      }
       case "checkbox":
         validator = field.required
           ? z.literal(true, { message: msg("required", { label }) })
@@ -140,10 +173,30 @@ export function buildZodSchema(
         break;
       }
       default: {
-        // text, textarea, phone, date
+        // text, textarea, phone
+        let s = z.string();
+        if (field.required) s = s.min(1, msg("required", { label }));
+        if (field.minLength !== undefined)
+          s = s.min(
+            field.minLength,
+            msg("minLength", { label, len: field.minLength })
+          );
+        if (field.maxLength !== undefined)
+          s = s.max(
+            field.maxLength,
+            msg("maxLength", { label, len: field.maxLength })
+          );
+        if (field.pattern) {
+          try {
+            s = s.regex(new RegExp(field.pattern), msg("pattern", { label }));
+          } catch {
+            // Invalid pattern in config — skip rather than crash the form.
+          }
+        }
+        // Optional: allow "" (unset) or a value meeting the constraints.
         validator = field.required
-          ? z.string().min(1, msg("required", { label }))
-          : z.string().optional();
+          ? s
+          : z.union([z.literal(""), s]).optional();
       }
     }
 

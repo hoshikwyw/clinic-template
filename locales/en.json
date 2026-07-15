@@ -103,7 +103,11 @@
     "email": "{label} must be a valid email",
     "min": "{label} must be ≥ {min}",
     "max": "{label} must be ≤ {max}",
-    "passwordMin": "{label} must be at least {min} characters"
+    "passwordMin": "{label} must be at least {min} characters",
+    "minLength": "{label} must be at least {len} characters",
+    "maxLength": "{label} must be at most {len} characters",
+    "pattern": "{label} is not in the expected format",
+    "date": "{label} must be a valid date"
   },
   "public": {
     "logIn": "Log in",

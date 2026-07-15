@@ -7,11 +7,15 @@ import my from "@/locales/my.json";
  * Email templates for appointment notifications. Plain, accessible HTML.
  * Subject + body are built from the clinic config + appointment details.
  *
- * Localized to the clinic's DEFAULT language (config.locale.defaultLang). Emails
- * are sent from server actions AND the reminder cron (no request context), so we
- * use next-intl's createTranslator with directly-imported messages rather than
- * the request-scoped getTranslations. Per-patient locale could be captured at
- * booking time later. See docs/08-i18n-languages.md.
+ * Localized per patient: resolveLocale() uses the patient's captured language
+ * when the clinic enables it, else the clinic default. Emails are sent from
+ * server actions AND the reminder cron (no request context), so we use
+ * next-intl's createTranslator with directly-imported catalogs rather than the
+ * request-scoped getTranslations. See docs/08-i18n-languages.md.
+ *
+ * NOTE: catalogs are statically imported (en, my). A clinic that enables a third
+ * language must add its catalog here for emails; until then such patients get
+ * the clinic default (see emailTranslator's fallback).
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

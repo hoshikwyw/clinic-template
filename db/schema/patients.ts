@@ -7,6 +7,7 @@ import {
   date,
   jsonb,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -38,9 +39,15 @@ export const patients = pgTable(
       .notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (t) => [
+    // One patient row per auth account (guests have null auth_user_id and are
+    // exempt). Keeps the RLS predicate auth.uid() = auth_user_id unambiguous.
+    uniqueIndex("patients_auth_user_id_unique")
+      .on(t.authUserId)
+      .where(sql`auth_user_id is not null`),
     pgPolicy("patients_self_select", {
       for: "select",
       to: "authenticated",

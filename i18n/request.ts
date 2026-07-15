@@ -21,7 +21,27 @@ export default getRequestConfig(async () => {
       ? cookieLocale
       : clinic.locale.defaultLang;
 
-  const messages = (await import(`../locales/${locale}.json`)).default;
+  // A clinic can enable a language before its locale file exists; fall back to
+  // the default language's messages rather than crashing every render.
+  const messages = await loadMessages(locale, clinic.locale.defaultLang);
 
   return { locale, messages };
 });
+
+async function loadMessages(
+  locale: string,
+  defaultLang: string
+): Promise<Record<string, unknown>> {
+  try {
+    return (await import(`../locales/${locale}.json`)).default;
+  } catch {
+    if (locale !== defaultLang) {
+      try {
+        return (await import(`../locales/${defaultLang}.json`)).default;
+      } catch {
+        // fall through
+      }
+    }
+    return {};
+  }
+}

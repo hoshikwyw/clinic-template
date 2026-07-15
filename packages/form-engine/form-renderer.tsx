@@ -166,10 +166,11 @@ function renderControl(field: FieldDefinition, rhf: any) {
     case "checkbox":
       return (
         <label className="flex items-center gap-3 text-sm font-medium">
-          <Checkbox
-            checked={!!rhf.value}
-            onCheckedChange={rhf.onChange}
-          />
+          {/* Through FormControl so the box gets id + aria-invalid +
+              aria-describedby (links to FormMessage) like every other field. */}
+          <FormControl>
+            <Checkbox checked={!!rhf.value} onCheckedChange={rhf.onChange} />
+          </FormControl>
           {field.label}
           {field.required && <span className="text-destructive"> *</span>}
         </label>
@@ -199,7 +200,12 @@ function renderControl(field: FieldDefinition, rhf: any) {
     case "email":
       return (
         <FormControl>
-          <Input type="email" placeholder={field.placeholder} {...rhf} />
+          <Input
+            type="email"
+            autoComplete={field.autoComplete ?? "email"}
+            placeholder={field.placeholder}
+            {...rhf}
+          />
         </FormControl>
       );
 
@@ -208,7 +214,7 @@ function renderControl(field: FieldDefinition, rhf: any) {
         <FormControl>
           <Input
             type="password"
-            autoComplete="current-password"
+            autoComplete={field.autoComplete ?? "current-password"}
             placeholder={field.placeholder}
             {...rhf}
           />
@@ -218,14 +224,24 @@ function renderControl(field: FieldDefinition, rhf: any) {
     case "phone":
       return (
         <FormControl>
-          <Input type="tel" placeholder={field.placeholder} {...rhf} />
+          <Input
+            type="tel"
+            autoComplete={field.autoComplete ?? "tel"}
+            placeholder={field.placeholder}
+            {...rhf}
+          />
         </FormControl>
       );
 
     default:
       return (
         <FormControl>
-          <Input type="text" placeholder={field.placeholder} {...rhf} />
+          <Input
+            type="text"
+            autoComplete={field.autoComplete}
+            placeholder={field.placeholder}
+            {...rhf}
+          />
         </FormControl>
       );
   }
