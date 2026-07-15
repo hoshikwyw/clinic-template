@@ -132,7 +132,7 @@ JDK), then point `capacitor.config.ts` `server.url` at your dev/prod URL. See
 ```
 app/         Next.js routes — (public) / (portal) patient app / (admin)
 modules/     feature slices — appointments, patients, scheduling, notifications,
-             telehealth, staff, billing
+             telehealth, staff (billing is a placeholder — not yet implemented)
 packages/    foundations — config-engine, form-engine, ui, auth, native
 db/          Drizzle schema + migrations + RLS
 config/      the active clinic + sample clinic configs
@@ -140,5 +140,10 @@ locales/     en / my message catalogs
 docs/        architecture & decision records
 tests/       Vitest suites
 ```
+
+**Module boundaries:** each `modules/*` slice exposes its public API through its
+`index.ts` barrel — import features via `@modules/<name>`, never from a module's
+`server/` internals (enforced by ESLint `no-restricted-imports`). Enabling an
+unimplemented module (e.g. `billing`) logs a dev-time warning.
 
 See [`docs/03-folder-structure.md`](./docs/03-folder-structure.md) for the full map.
