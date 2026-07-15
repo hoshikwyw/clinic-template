@@ -15,6 +15,9 @@ async function main() {
     process.exit(1);
   }
 
+  // NOTE: this constructs the admin client inline rather than importing
+  // createAdminClient() from lib/supabase/admin.ts on purpose. That module is
+  // marked `server-only`, which tsx (used to run this script) cannot resolve.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
