@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser, isStaff } from "@auth";
-import { getAllAppointments } from "@modules/appointments/server/admin";
+import { getAllAppointments } from "@modules/appointments";
 import { getClinicConfig } from "@/config/clinic";
 
 /** RFC 4180 cell escaping. */

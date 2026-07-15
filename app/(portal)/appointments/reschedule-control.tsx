@@ -1,7 +1,7 @@
 "use client";
 
 import { RescheduleControl as RescheduleControlBase } from "@modules/appointments/components/reschedule-control";
-import { rescheduleMyAppointment } from "@modules/appointments/server/booking";
+import { rescheduleMyAppointment } from "@modules/appointments";
 
 /** Patient inline reschedule control for one of their own appointments. */
 export function RescheduleControl({

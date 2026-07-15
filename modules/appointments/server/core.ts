@@ -4,21 +4,15 @@ import { db } from "@db/index";
 import { appointments } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { generateDaySlots, type DaySlots } from "@modules/scheduling";
+import type { ActionResult } from "../dto";
 
 /**
- * Shared appointment domain logic — internal helpers used by the booking (patient)
- * and admin (staff) server actions. NOT a "use server" module: it holds plain
- * functions and types the actions build on, so the two entry points don't
- * duplicate slot availability, the row→DTO mapping, or the move/reschedule flow.
+ * Shared appointment domain logic — internal DB-touching helpers used by the
+ * booking (patient) and admin (staff) server actions. NOT a "use server" module
+ * and NOT part of the public barrel (it imports the db client): the two entry
+ * points build on it so they don't duplicate slot availability or the
+ * move/reschedule flow. Pure types/mappers live in ../dto.
  */
-
-/** Default page size for the admin appointments list. */
-export const APPOINTMENTS_PAGE_SIZE = 20;
-
-/** Generic discriminated result for server actions that can fail. */
-export type ActionResult<E extends string = string> =
-  | { ok: true }
-  | { ok: false; error: E };
 
 /** Postgres unique-violation (e.g. two writes racing for the same slot). */
 export function isUniqueViolation(err: unknown): boolean {
@@ -27,32 +21,6 @@ export function isUniqueViolation(err: unknown): boolean {
     err !== null &&
     (err as { code?: string }).code === "23505"
   );
-}
-
-/** Canonical appointment shape returned to the UI (dates as ISO strings). */
-export interface AppointmentDTO {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  startIso: string;
-  status: string;
-}
-
-/** Map a selected appointment row to the canonical DTO. */
-export function toAppointmentDTO(row: {
-  id: string;
-  serviceId: string;
-  serviceName: string;
-  startAt: Date;
-  status: string;
-}): AppointmentDTO {
-  return {
-    id: row.id,
-    serviceId: row.serviceId,
-    serviceName: row.serviceName,
-    startIso: row.startAt.toISOString(),
-    status: row.status,
-  };
 }
 
 /**

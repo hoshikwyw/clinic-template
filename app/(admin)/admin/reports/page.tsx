@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
-import { getReportData } from "@modules/appointments/server/reports";
+import { getReportData } from "@modules/appointments";
 import { STATUS_STYLES, STATUS_ORDER } from "@/lib/status-styles";
 import { Skeleton } from "@ui/primitives/skeleton";
 import {

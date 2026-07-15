@@ -17,9 +17,8 @@ import {
   computeAvailableSlots,
   isUniqueViolation,
   moveAppointment,
-  toAppointmentDTO,
-  type AppointmentDTO,
 } from "./core";
+import { toAppointmentDTO, type AppointmentDTO } from "../dto";
 
 /**
  * Booking server actions. Run on a trusted direct DB connection (Drizzle), so

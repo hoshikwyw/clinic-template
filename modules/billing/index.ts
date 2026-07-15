@@ -1,11 +1,12 @@
-﻿/**
- * billing module — vertical slice (components/ + server/ + schema + types colocated).
+/**
+ * billing module — NOT YET IMPLEMENTED (placeholder).
  *
- * Invoices, payments, pricing. Toggleable per clinic.
+ * Intended scope: invoices, payments, pricing. There is no functionality here
+ * yet, so enabling ClinicConfig.modules.billing has no effect (getClinicConfig
+ * logs a dev warning if it's turned on). Kept as a placeholder so the module
+ * toggle and folder structure exist for when this is built out.
  *
- * Toggleable via ClinicConfig.modules.billing. Public API of the module is this file.
- * See docs/02-architecture.md ("Feature Modules") and docs/03-folder-structure.md.
- * NOTE: Phase 0 stub.
+ * See docs/02-architecture.md ("Feature Modules") and docs/06-roadmap-phases.md.
  */
 
 export {};

@@ -4,7 +4,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
 import { signOutAndRedirect } from "@auth/actions";
-import { getMyAppointments } from "@modules/appointments/server/booking";
+import { getMyAppointments } from "@modules/appointments";
 import { formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@ui/patterns/status-badge";
 import { Button } from "@ui/primitives/button";

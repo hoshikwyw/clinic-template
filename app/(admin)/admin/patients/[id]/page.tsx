@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getSessionUser, isStaff } from "@auth";
-import { getPatientDetail } from "@modules/patients/server/admin";
+import { getPatientDetail } from "@modules/patients";
 import { getClinicConfig } from "@/config/clinic";
 import { formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@ui/patterns/status-badge";

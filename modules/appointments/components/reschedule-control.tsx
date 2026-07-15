@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { getAvailableSlots } from "@modules/appointments/server/booking";
+import { getAvailableSlots } from "../server/booking";
 import type { DaySlots, Slot } from "@modules/scheduling";
 import { Button } from "@ui/primitives/button";
 

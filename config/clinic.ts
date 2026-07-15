@@ -18,6 +18,23 @@ import { smileDental } from "./clinics/smile-dental";
 const activeClinic = smileDental;
 
 /**
+ * Feature-module toggles that have no implementation yet. Enabling one is a
+ * config mistake (the toggle does nothing), so warn about it in development.
+ */
+const UNIMPLEMENTED_MODULES = ["billing"] as const;
+
+function warnUnimplementedModules(config: ClinicConfig): void {
+  if (process.env.NODE_ENV === "production") return;
+  for (const m of UNIMPLEMENTED_MODULES) {
+    if (config.modules[m]) {
+      console.warn(
+        `[config] modules.${m} is enabled but not implemented yet — the toggle has no effect.`
+      );
+    }
+  }
+}
+
+/**
  * Load + validate this deployment's clinic config (defaults applied).
  *
  * Single-tenant + config-in-code means the result is static for the process
@@ -26,5 +43,9 @@ const activeClinic = smileDental;
  */
 let cached: ClinicConfig | undefined;
 export function getClinicConfig(): ClinicConfig {
-  return (cached ??= parseClinicConfig(activeClinic));
+  if (!cached) {
+    cached = parseClinicConfig(activeClinic);
+    warnUnimplementedModules(cached);
+  }
+  return cached;
 }

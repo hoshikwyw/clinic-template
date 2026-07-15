@@ -14,7 +14,7 @@ import {
   getAvailableSlots,
   createAppointment,
   type BookingResult,
-} from "@modules/appointments/server/booking";
+} from "../server/booking";
 import type { DaySlots, Slot } from "@modules/scheduling";
 
 export interface BookingService {

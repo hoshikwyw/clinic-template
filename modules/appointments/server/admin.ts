@@ -8,13 +8,13 @@ import { appointments, patients } from "@db/schema";
 import { requireStaff } from "@auth";
 import { getClinicConfig } from "@/config/clinic";
 import { notifyAppointmentStatus } from "@modules/notifications";
+import { moveAppointment } from "./core";
 import {
-  moveAppointment,
   toAppointmentDTO,
-  APPOINTMENTS_PAGE_SIZE,
   type ActionResult,
   type AppointmentDTO,
-} from "./core";
+} from "../dto";
+import { APPOINTMENTS_PAGE_SIZE } from "../pagination";
 
 /**
  * Staff-only appointment management. Every action calls requireStaff(), which

@@ -1,11 +1,18 @@
-﻿/**
- * staff module — vertical slice (components/ + server/ + schema + types colocated).
+/**
+ * staff module — vertical slice (server/ + types colocated).
  *
- * Staff & clinician management, roles, permissions.
+ * Staff & clinician management and role assignment (admin-only). This file is
+ * the module's PUBLIC API — import from "@modules/staff", never from its
+ * server/ internals.
  *
- * Toggleable via ClinicConfig.modules.staff. Public API of the module is this file.
+ * Toggleable via ClinicConfig.modules.staff.
  * See docs/02-architecture.md ("Feature Modules") and docs/03-folder-structure.md.
- * NOTE: Phase 0 stub.
  */
 
-export {};
+export {
+  listStaff,
+  setStaffRole,
+  addStaffByEmail,
+  type StaffMember,
+  type SetRoleResult,
+} from "./server/admin";

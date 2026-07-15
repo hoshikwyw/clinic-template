@@ -3,10 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getSessionUser } from "@auth";
-import {
-  getMyAppointments,
-  type MyAppointment,
-} from "@modules/appointments/server/booking";
+import { getMyAppointments, type MyAppointment } from "@modules/appointments";
 import { getClinicConfig } from "@/config/clinic";
 import { isModuleEnabled } from "@config-engine";
 import { getTelehealthState } from "@modules/telehealth";

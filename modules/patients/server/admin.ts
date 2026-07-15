@@ -4,11 +4,8 @@ import { asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@db/index";
 import { patients, appointments } from "@db/schema";
 import { requireStaff } from "@auth";
-import {
-  toAppointmentDTO,
-  type AppointmentDTO,
-} from "@modules/appointments/server/core";
-import { PATIENTS_PAGE_SIZE } from "@modules/patients/pagination";
+import { toAppointmentDTO, type AppointmentDTO } from "@modules/appointments";
+import { PATIENTS_PAGE_SIZE } from "../pagination";
 
 /**
  * Staff-only patient directory. Every action calls requireStaff() (role from

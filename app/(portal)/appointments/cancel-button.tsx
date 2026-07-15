@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { cancelMyAppointment } from "@modules/appointments/server/booking";
+import { cancelMyAppointment } from "@modules/appointments";
 import { Button } from "@ui/primitives/button";
 
 export function CancelButton({ id }: { id: string }) {

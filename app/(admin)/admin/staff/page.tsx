@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getSessionUser, isAdmin } from "@auth";
-import { listStaff } from "@modules/staff/server/admin";
+import { listStaff } from "@modules/staff";
 import { StaffManager } from "./staff-manager";
 
 /**

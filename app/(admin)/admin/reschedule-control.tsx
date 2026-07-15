@@ -1,7 +1,7 @@
 "use client";
 
 import { RescheduleControl } from "@modules/appointments/components/reschedule-control";
-import { rescheduleAppointment } from "@modules/appointments/server/admin";
+import { rescheduleAppointment } from "@modules/appointments";
 
 /** Staff inline reschedule control for one appointment (wider slot grid). */
 export function AdminRescheduleControl({

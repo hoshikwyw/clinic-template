@@ -4,10 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { FormRenderer, type FormSchema } from "@form-engine";
-import {
-  updateMyProfile,
-  type MyProfile,
-} from "@modules/patients/server/profile";
+import { updateMyProfile, type MyProfile } from "@modules/patients";
 
 export function ProfileForm({ profile }: { profile: MyProfile }) {
   const t = useTranslations("profile");

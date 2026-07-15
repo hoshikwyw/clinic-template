@@ -11,8 +11,8 @@ import {
   getAppointmentsPage,
   getDashboardStats,
   updateAppointmentStatus,
-} from "@modules/appointments/server/admin";
-import { APPOINTMENTS_PAGE_SIZE } from "@modules/appointments/server/core";
+  APPOINTMENTS_PAGE_SIZE,
+} from "@modules/appointments";
 import { getTelehealthState } from "@modules/telehealth";
 import { AdminRescheduleControl } from "./reschedule-control";
 import { StatusBadge } from "@ui/patterns/status-badge";

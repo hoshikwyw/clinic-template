@@ -8,7 +8,7 @@ import {
   addStaffByEmail,
   type StaffMember,
   type SetRoleResult,
-} from "@modules/staff/server/admin";
+} from "@modules/staff";
 import { Button } from "@ui/primitives/button";
 import { Input } from "@ui/primitives/input";
 

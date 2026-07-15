@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { getMyProfile } from "@modules/patients/server/profile";
+import { getMyProfile } from "@modules/patients";
 import { ProfileForm } from "./profile-form";
 
 /**
