@@ -7,12 +7,15 @@ import { formatDateTime } from "@/lib/format";
 import { getSessionUser, isStaff } from "@auth";
 import { signOutAndRedirect } from "@auth/actions";
 import {
-  getAllAppointments,
+  getAppointmentsPage,
+  getDashboardStats,
   updateAppointmentStatus,
+  APPOINTMENTS_PAGE_SIZE,
 } from "@modules/appointments/server/admin";
 import { getTelehealthState } from "@modules/telehealth";
 import { AdminRescheduleControl } from "./reschedule-control";
 import { StatusBadge } from "@ui/patterns/status-badge";
+import { Pagination } from "@ui/patterns/pagination";
 import { Button } from "@ui/primitives/button";
 import {
   Card,
@@ -29,7 +32,11 @@ async function changeStatus(formData: FormData) {
   await updateAppointmentStatus(id, status);
 }
 
-export default async function AdminHome() {
+export default async function AdminHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const t = await getTranslations("admin");
   const ts = await getTranslations("status");
   const user = await getSessionUser();
@@ -52,41 +59,32 @@ export default async function AdminHome() {
   }
 
   const tt = await getTranslations("telehealth");
+  const tp = await getTranslations("pagination");
   const config = getClinicConfig();
-  const appointments = await getAllAppointments();
   const locale = await getLocale();
   const telehealthOn = isModuleEnabled(config, "telehealth");
 
-  const fmt = (iso: string) => formatDateTime(iso, locale, config.locale.timezone);
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
 
-  // Stats (clinic timezone). "Today" = same calendar day; excludes cancelled.
-  // Server Component: renders once per request and is never re-rendered, so the
-  // clock read is deterministic for this render (the purity rule targets Client
-  // Components).
-  // eslint-disable-next-line react-hooks/purity
-  const now = Date.now();
-  const dateInTz = (iso: string) =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: config.locale.timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(iso));
-  const todayStr = dateInTz(new Date().toISOString());
-  const active = appointments.filter((a) => a.status !== "cancelled");
-  const stats = [
-    {
-      label: t("statToday"),
-      value: active.filter((a) => dateInTz(a.startIso) === todayStr).length,
-    },
-    {
-      label: t("statPending"),
-      value: appointments.filter((a) => a.status === "pending").length,
-    },
-    {
-      label: t("statUpcoming"),
-      value: active.filter((a) => new Date(a.startIso).getTime() >= now).length,
-    },
+  // Stats are computed in SQL; the list is one page — no more loading every
+  // appointment into the dashboard.
+  const [stats, appointments] = await Promise.all([
+    getDashboardStats(),
+    getAppointmentsPage({
+      limit: APPOINTMENTS_PAGE_SIZE,
+      offset: (page - 1) * APPOINTMENTS_PAGE_SIZE,
+    }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(stats.total / APPOINTMENTS_PAGE_SIZE));
+
+  const fmt = (iso: string) => formatDateTime(iso, locale, config.locale.timezone);
+  const hrefForPage = (p: number) => (p > 1 ? `/admin?page=${p}` : "/admin");
+
+  const statCards = [
+    { label: t("statToday"), value: stats.today },
+    { label: t("statPending"), value: stats.pending },
+    { label: t("statUpcoming"), value: stats.upcoming },
   ];
 
   return (
@@ -117,7 +115,7 @@ export default async function AdminHome() {
       </header>
 
       <div className="grid grid-cols-3 gap-3">
-        {stats.map((s) => (
+        {statCards.map((s) => (
           <Card key={s.label}>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{s.value}</div>
@@ -130,12 +128,12 @@ export default async function AdminHome() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {t("allAppointments", { count: appointments.length })}
+            {t("allAppointments", { count: stats.total })}
           </CardTitle>
           <CardDescription>{t("newestFirst")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {appointments.length === 0 && (
+          {stats.total === 0 && (
             <p className="text-sm text-muted-foreground">
               {t("noAppointments")}{" "}
               <Link href="/portal" className="underline">
@@ -172,7 +170,6 @@ export default async function AdminHome() {
                     startIso: a.startIso,
                     appointmentId: a.id,
                     clinicSlug: config.slug,
-                    now,
                   });
                   if (!tele.visible) return null;
                   return tele.joinable ? (
@@ -234,6 +231,15 @@ export default async function AdminHome() {
               )}
             </div>
           ))}
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            hrefForPage={hrefForPage}
+            prevLabel={tp("prev")}
+            nextLabel={tp("next")}
+            summary={tp("page", { page, total: totalPages })}
+          />
         </CardContent>
       </Card>
     </div>

@@ -1,11 +1,12 @@
 "use server";
 
 import { z } from "zod";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { requireStaff } from "@auth";
+import { getClinicConfig } from "@/config/clinic";
 import { notifyAppointmentStatus } from "@modules/notifications";
 import {
   moveAppointment,
@@ -26,31 +27,104 @@ export interface AdminAppointment extends AppointmentDTO {
   patientPhone: string;
 }
 
-/** All appointments with patient contact info (newest first). */
-export async function getAllAppointments(): Promise<AdminAppointment[]> {
-  await requireStaff();
+/** Default page size for the admin appointments list. */
+export const APPOINTMENTS_PAGE_SIZE = 20;
 
-  const rows = await db
-    .select({
-      id: appointments.id,
-      patientId: patients.id,
-      patientName: patients.fullName,
-      patientPhone: patients.phone,
-      serviceId: appointments.serviceId,
-      serviceName: appointments.serviceName,
-      startAt: appointments.startAt,
-      status: appointments.status,
-    })
-    .from(appointments)
-    .innerJoin(patients, eq(appointments.patientId, patients.id))
-    .orderBy(desc(appointments.startAt));
+// Shared select shape + row mapper for the admin appointment lists.
+const adminAppointmentColumns = {
+  id: appointments.id,
+  patientId: patients.id,
+  patientName: patients.fullName,
+  patientPhone: patients.phone,
+  serviceId: appointments.serviceId,
+  serviceName: appointments.serviceName,
+  startAt: appointments.startAt,
+  status: appointments.status,
+};
 
-  return rows.map((r) => ({
+function toAdminAppointment(r: {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientPhone: string;
+  serviceId: string;
+  serviceName: string;
+  startAt: Date;
+  status: string;
+}): AdminAppointment {
+  return {
     ...toAppointmentDTO(r),
     patientId: r.patientId,
     patientName: r.patientName,
     patientPhone: r.patientPhone,
-  }));
+  };
+}
+
+/**
+ * All appointments with patient contact info (newest first). Unbounded — use
+ * for bulk operations only (e.g. CSV export); the dashboard uses the paginated
+ * getAppointmentsPage.
+ */
+export async function getAllAppointments(): Promise<AdminAppointment[]> {
+  await requireStaff();
+
+  const rows = await db
+    .select(adminAppointmentColumns)
+    .from(appointments)
+    .innerJoin(patients, eq(appointments.patientId, patients.id))
+    .orderBy(desc(appointments.startAt));
+
+  return rows.map(toAdminAppointment);
+}
+
+/** One page of appointments with patient contact info (newest first). */
+export async function getAppointmentsPage(
+  opts: { limit?: number; offset?: number } = {}
+): Promise<AdminAppointment[]> {
+  await requireStaff();
+
+  const rows = await db
+    .select(adminAppointmentColumns)
+    .from(appointments)
+    .innerJoin(patients, eq(appointments.patientId, patients.id))
+    .orderBy(desc(appointments.startAt))
+    .limit(opts.limit ?? APPOINTMENTS_PAGE_SIZE)
+    .offset(opts.offset ?? 0);
+
+  return rows.map(toAdminAppointment);
+}
+
+export interface DashboardStats {
+  today: number;
+  pending: number;
+  upcoming: number;
+  total: number;
+}
+
+/**
+ * Dashboard stat counts, computed in SQL (one round-trip) instead of loading
+ * every appointment into the page. "Today" is the clinic-timezone calendar day
+ * and excludes cancelled; "upcoming" excludes cancelled.
+ */
+export async function getDashboardStats(): Promise<DashboardStats> {
+  await requireStaff();
+  const tz = getClinicConfig().locale.timezone;
+
+  const [row] = await db
+    .select({
+      today: sql<number>`(count(*) filter (where ${appointments.status} <> 'cancelled' and (${appointments.startAt} AT TIME ZONE ${tz})::date = (now() AT TIME ZONE ${tz})::date))::int`,
+      pending: sql<number>`(count(*) filter (where ${appointments.status} = 'pending'))::int`,
+      upcoming: sql<number>`(count(*) filter (where ${appointments.status} <> 'cancelled' and ${appointments.startAt} >= now()))::int`,
+      total: sql<number>`count(*)::int`,
+    })
+    .from(appointments);
+
+  return {
+    today: Number(row?.today ?? 0),
+    pending: Number(row?.pending ?? 0),
+    upcoming: Number(row?.upcoming ?? 0),
+    total: Number(row?.total ?? 0),
+  };
 }
 
 const statusSchema = z.enum([

@@ -23,48 +23,51 @@ const DAILY_WINDOW_DAYS = 14;
 export async function getReportData(): Promise<ReportData> {
   await requireStaff();
   const tz = getClinicConfig().locale.timezone;
-
-  const statusRows = await db
-    .select({
-      status: appointments.status,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(appointments)
-    .groupBy(appointments.status);
-
-  const serviceRows = await db
-    .select({
-      service: appointments.serviceName,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(appointments)
-    .groupBy(appointments.serviceName)
-    .orderBy(sql`count(*) desc`)
-    .limit(8);
-
-  // Bookings (by creation date) over the last N days, bucketed in clinic tz.
   const since = new Date(Date.now() - DAILY_WINDOW_DAYS * 86_400_000);
-  const created = await db
-    .select({ createdAt: appointments.createdAt })
-    .from(appointments)
-    .where(gte(appointments.createdAt, since));
 
-  const dateInTz = (d: Date) =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: tz,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(d);
+  // Bucket bookings by their creation date in the clinic timezone, in SQL —
+  // returns at most DAILY_WINDOW_DAYS grouped rows instead of every row.
+  const dayExpr = sql<string>`to_char((${appointments.createdAt} AT TIME ZONE ${tz})::date, 'YYYY-MM-DD')`;
 
-  // Seed every day in the window so the chart has no gaps.
+  // The three aggregates are independent — run them concurrently.
+  const [statusRows, serviceRows, dailyRows] = await Promise.all([
+    db
+      .select({ status: appointments.status, count: sql<number>`count(*)::int` })
+      .from(appointments)
+      .groupBy(appointments.status),
+    db
+      .select({
+        service: appointments.serviceName,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(appointments)
+      .groupBy(appointments.serviceName)
+      .orderBy(sql`count(*) desc`)
+      .limit(8),
+    db
+      .select({ date: dayExpr, count: sql<number>`count(*)::int` })
+      .from(appointments)
+      .where(gte(appointments.createdAt, since))
+      // Group by the output ordinal, not the fragment: reusing dayExpr would
+      // emit a different bind-param number for `tz`, and Postgres compares
+      // GROUP BY expressions by parse tree (distinct Params aren't equal).
+      .groupBy(sql`1`),
+  ]);
+
+  // Seed every day in the window (clinic tz) so the chart has no gaps, then
+  // fill from the grouped SQL result.
+  const enCA = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
   const counts = new Map<string, number>();
   for (let i = DAILY_WINDOW_DAYS - 1; i >= 0; i--) {
-    counts.set(dateInTz(new Date(Date.now() - i * 86_400_000)), 0);
+    counts.set(enCA.format(new Date(Date.now() - i * 86_400_000)), 0);
   }
-  for (const row of created) {
-    const key = dateInTz(row.createdAt);
-    if (counts.has(key)) counts.set(key, (counts.get(key) ?? 0) + 1);
+  for (const r of dailyRows) {
+    if (counts.has(r.date)) counts.set(r.date, Number(r.count));
   }
 
   const byStatus: Record<string, number> = {};

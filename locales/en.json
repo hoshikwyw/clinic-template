@@ -14,6 +14,11 @@
     "profile": "Profile",
     "settings": "Settings"
   },
+  "pagination": {
+    "prev": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {total}"
+  },
   "realtime": {
     "newAppointment": "New appointment booked",
     "confirmed": "Your appointment is confirmed",

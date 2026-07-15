@@ -22,12 +22,32 @@ export interface PatientListItem {
   appointmentCount: number;
 }
 
-/** List patients, optionally filtered by a name/phone search. */
-export async function getPatientsList(
-  search?: string
-): Promise<PatientListItem[]> {
+export interface PatientsPage {
+  items: PatientListItem[];
+  /** total patients matching the search (across all pages) */
+  total: number;
+}
+
+/** Default page size for the patient directory. */
+export const PATIENTS_PAGE_SIZE = 20;
+
+/**
+ * List patients (paginated), optionally filtered by a name/phone search.
+ *
+ * NOTE: the search uses a leading-wildcard ILIKE, which can't use a btree index
+ * and scans the table. Fine at template scale; for large directories add a
+ * pg_trgm GIN index on full_name/phone (extension + migration) and switch to a
+ * trigram match.
+ */
+export async function getPatientsList(opts: {
+  search?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<PatientsPage> {
   await requireStaff();
-  const q = (search ?? "").trim();
+  const q = (opts.search ?? "").trim();
+  const limit = opts.limit ?? PATIENTS_PAGE_SIZE;
+  const offset = opts.offset ?? 0;
   const where = q
     ? or(ilike(patients.fullName, `%${q}%`), ilike(patients.phone, `%${q}%`))
     : undefined;
@@ -38,21 +58,29 @@ export async function getPatientsList(
       fullName: patients.fullName,
       phone: patients.phone,
       email: patients.email,
-      count: sql<number>`count(${appointments.id})`,
+      count: sql<number>`count(${appointments.id})::int`,
+      // Window count over the grouped result = total matching patients,
+      // evaluated before LIMIT — one query gives both the page and the total.
+      total: sql<number>`(count(*) over())::int`,
     })
     .from(patients)
     .leftJoin(appointments, eq(appointments.patientId, patients.id))
     .where(where)
     .groupBy(patients.id)
-    .orderBy(asc(patients.fullName));
+    .orderBy(asc(patients.fullName))
+    .limit(limit)
+    .offset(offset);
 
-  return rows.map((r) => ({
-    id: r.id,
-    fullName: r.fullName,
-    phone: r.phone,
-    email: r.email,
-    appointmentCount: Number(r.count),
-  }));
+  return {
+    items: rows.map((r) => ({
+      id: r.id,
+      fullName: r.fullName,
+      phone: r.phone,
+      email: r.email,
+      appointmentCount: Number(r.count),
+    })),
+    total: rows[0] ? Number(rows[0].total) : 0,
+  };
 }
 
 export interface PatientDetail {
