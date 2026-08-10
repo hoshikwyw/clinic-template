@@ -91,6 +91,7 @@ export function BookingWizard({
   }
   function back() {
     setStepIndex((i) => Math.max(i - 1, 0));
+    setResult(null); // drop any stale "slot taken" error when leaving review
   }
 
   function money(n?: number) {

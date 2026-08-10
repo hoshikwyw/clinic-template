@@ -23,7 +23,10 @@ export function StatusBadge({
       )}
     >
       <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
-      {label}
+      {/* Strike the label text only — not the status dot. */}
+      <span className={status === "cancelled" ? "line-through" : undefined}>
+        {label}
+      </span>
     </span>
   );
 }
