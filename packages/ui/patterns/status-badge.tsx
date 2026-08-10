@@ -17,11 +17,12 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "rounded-md px-2 py-0.5 text-xs",
+        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-current/10 ring-inset",
         STATUS_STYLES[status] ?? "",
         className
       )}
     >
+      <span className="size-1.5 rounded-full bg-current opacity-80" aria-hidden />
       {label}
     </span>
   );

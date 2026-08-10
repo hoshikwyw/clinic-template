@@ -26,10 +26,10 @@ export function Pagination({
   const linkCls =
     "inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-muted";
   const disabledCls =
-    "inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm font-medium opacity-40";
+    "inline-flex min-h-9 cursor-default items-center rounded-md border border-border px-3 text-sm font-medium opacity-40";
 
   return (
-    <nav className="flex items-center justify-between gap-2 pt-2">
+    <nav className="flex select-none items-center justify-between gap-2 pt-2">
       {page > 1 ? (
         <Link href={hrefForPage(page - 1)} className={linkCls}>
           ← {prevLabel}
@@ -40,7 +40,9 @@ export function Pagination({
         </span>
       )}
 
-      <span className="text-xs text-muted-foreground">{summary}</span>
+      <span className="text-xs text-muted-foreground tabular-nums">
+        {summary}
+      </span>
 
       {page < totalPages ? (
         <Link href={hrefForPage(page + 1)} className={linkCls}>
