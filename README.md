@@ -92,13 +92,16 @@ After that, admins manage the whole team from **/admin/staff**.
 
 ## Setting up a new clinic
 
-This is the point of the template — a new clinic is **config, not code**:
+This is the point of the template — a new clinic is **config, not code**. Full
+walkthrough: [docs/09 — New Clinic Checklist](./docs/09-new-clinic-checklist.md).
 
-1. Copy a sample config in [`config/clinics/`](./config/clinics) (e.g.
-   `smile-dental.ts`) and edit branding, services, intake form, business hours,
-   booking rules, languages, and enabled modules.
+1. Scaffold a config: `pnpm new-clinic <slug> "Clinic Name"` (copies
+   [`config/clinics/_template.ts`](./config/clinics/_template.ts)) — or copy a
+   filled sample like `smile-dental.ts` by hand. Edit branding, services, intake
+   form, business hours, booking rules, languages, and enabled modules.
 2. Point [`config/clinic.ts`](./config/clinic.ts) at it (`activeClinic = ...`).
-3. Give the clinic its own Supabase project + env, deploy.
+3. Swap the icon assets (`app/icon.svg`, `app/favicon.ico`, `public/icon.svg`).
+4. Give the clinic its own Supabase project + env, deploy.
 
 The pediatric sample (`little-stars-pediatric.ts`) is a deliberately different
 clinic — verified to run on this exact code (different services, Myanmar default,
