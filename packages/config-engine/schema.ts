@@ -26,11 +26,26 @@ export const brandingSchema = z.object({
   logoUrl: z.url().optional(),
   /** any CSS color — hex or oklch(...). Injected as the --primary token. */
   primaryColor: z.string().min(1),
+  /**
+   * Text/icon color that sits ON primaryColor (buttons, active states). Set this
+   * whenever primaryColor is light, or button labels can become unreadable —
+   * defaults to the theme's near-white foreground otherwise.
+   */
+  primaryForeground: z.string().optional(),
   accentColor: z.string().optional(),
-  /** base radius token, e.g. "0.625rem" */
+  /** muted brand color for secondary surfaces (maps to --secondary). */
+  secondaryColor: z.string().optional(),
+  /** base radius token, e.g. "0.625rem" (smaller = clinical, larger = friendly). */
   radius: z.string().optional(),
   /** font-family stack */
   font: z.string().optional(),
+  /**
+   * Escape hatch: override ANY design token by name, e.g.
+   * `{ "--background": "oklch(0.99 0 0)", "muted": "…" }`. Keys may omit the
+   * leading `--`. Applied last, so it wins over the fields above. Lets a clinic
+   * retheme fully from config without touching components/CSS.
+   */
+  tokens: z.record(z.string(), z.string()).optional(),
 });
 export type Branding = z.infer<typeof brandingSchema>;
 

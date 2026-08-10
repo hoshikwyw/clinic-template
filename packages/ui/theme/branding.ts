@@ -12,11 +12,28 @@ export function brandingToStyle(branding: Branding): CSSProperties {
     "--ring": branding.primaryColor,
     "--sidebar-primary": branding.primaryColor,
   };
+  if (branding.primaryForeground) {
+    // Text/icons that sit on the primary color — critical for legibility when
+    // primaryColor is light.
+    vars["--primary-foreground"] = branding.primaryForeground;
+    vars["--sidebar-primary-foreground"] = branding.primaryForeground;
+  }
   if (branding.accentColor) {
     vars["--accent"] = branding.accentColor;
   }
+  if (branding.secondaryColor) {
+    vars["--secondary"] = branding.secondaryColor;
+  }
   if (branding.radius) {
     vars["--radius"] = branding.radius;
+  }
+
+  // Escape hatch: arbitrary token overrides win over everything above. Keys may
+  // be given with or without the leading `--`.
+  if (branding.tokens) {
+    for (const [key, value] of Object.entries(branding.tokens)) {
+      vars[key.startsWith("--") ? key : `--${key}`] = value;
+    }
   }
 
   return {
