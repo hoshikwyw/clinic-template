@@ -84,6 +84,14 @@ export const littleStarsPediatric = defineClinicConfig({
     closeTime: "16:30",
     slotMinutes: 20,
     bookingHorizonDays: 21,
+    // Deliberately different from the dental sample: this is the Phase 3
+    // reusability check — two clinics, same engine, different shape of day.
+    breaks: [
+      { startTime: "12:00", endTime: "13:00", label: "Lunch" },
+      // Wednesday afternoon is reserved for the vaccination clinic.
+      { startTime: "14:00", endTime: "16:30", days: [3], label: "Vaccinations" },
+    ],
+    exceptions: [{ from: "2027-04-13", to: "2027-04-16", label: "Thingyan" }],
   },
   // Pediatric: book under the guardian; the child's details are in the intake.
   bookingContact: {

@@ -10,6 +10,8 @@
 export {
   generateDaySlots,
   zonedWallTimeToUtc,
+  wallTimeExists,
+  findScheduleException,
   type Slot,
   type DaySlots,
   type GenerateSlotsOptions,

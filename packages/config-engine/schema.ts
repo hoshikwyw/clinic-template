@@ -109,6 +109,98 @@ const timeOfDay = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be HH:MM (24h)");
 
+/** "YYYY-MM-DD" clinic-local calendar date. */
+const isoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "must be YYYY-MM-DD")
+  .refine((s) => {
+    // Reject 2026-02-30 and friends: a typo'd holiday date silently never
+    // matches, so the clinic takes bookings on a day it is closed.
+    const [y, m, d] = s.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return (
+      dt.getUTCFullYear() === y &&
+      dt.getUTCMonth() === m - 1 &&
+      dt.getUTCDate() === d
+    );
+  }, "must be a real calendar date");
+
+/**
+ * A recurring daily break — lunch, a cleaning block, a ward round. Slots that
+ * would overlap it are not offered.
+ */
+export const scheduleBreakSchema = z
+  .object({
+    startTime: timeOfDay,
+    endTime: timeOfDay,
+    /** weekdays it applies to (0=Sun…6=Sat); omit for every open day */
+    days: z.array(z.number().int().min(0).max(6)).optional(),
+    label: z.string().optional(),
+  })
+  .refine((b) => b.startTime < b.endTime, {
+    error: "startTime must be earlier than endTime",
+    path: ["endTime"],
+  });
+export type ScheduleBreak = z.infer<typeof scheduleBreakSchema>;
+
+/**
+ * A one-off override for specific dates — a public holiday, a clinic retreat,
+ * or a special Sunday opening.
+ *
+ * Without this a clinic's weekly hours are a flat rectangle, so the app happily
+ * takes bookings on Thingyan and the front desk has to phone everyone back.
+ */
+export const scheduleExceptionSchema = z
+  .object({
+    /** first affected clinic-local date */
+    from: isoDate,
+    /** last affected date, inclusive; defaults to `from` for a single day */
+    to: isoDate.optional(),
+    label: z.string().optional(),
+    /** closed all day (the default), or `false` to declare replacement hours */
+    closed: z.boolean().default(true),
+    /** replacement opening time — required when `closed` is false */
+    openTime: timeOfDay.optional(),
+    /** replacement closing time — required when `closed` is false */
+    closeTime: timeOfDay.optional(),
+  })
+  .superRefine((e, ctx) => {
+    if (e.to && e.to < e.from) {
+      ctx.addIssue({
+        code: "custom",
+        message: "`to` must not be earlier than `from`",
+        path: ["to"],
+      });
+    }
+    if (e.closed) {
+      // Silently ignoring hours on a closed day is how a config comes to mean
+      // something other than what it says.
+      if (e.openTime || e.closeTime) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "openTime/closeTime have no effect on a closed day — set closed: false to declare special hours",
+          path: ["closed"],
+        });
+      }
+      return;
+    }
+    if (!e.openTime || !e.closeTime) {
+      ctx.addIssue({
+        code: "custom",
+        message: "special hours need both openTime and closeTime",
+        path: ["openTime"],
+      });
+    } else if (e.openTime >= e.closeTime) {
+      ctx.addIssue({
+        code: "custom",
+        message: "openTime must be earlier than closeTime",
+        path: ["closeTime"],
+      });
+    }
+  });
+export type ScheduleException = z.infer<typeof scheduleExceptionSchema>;
+
 /** Weekly opening hours — drives bookable time slots. */
 export const businessHoursSchema = z
   .object({
@@ -120,6 +212,10 @@ export const businessHoursSchema = z
     slotMinutes: z.number().int().positive().default(30),
     /** how many days ahead patients may book */
     bookingHorizonDays: z.number().int().positive().default(30),
+    /** recurring daily breaks (lunch, cleaning) carved out of the open window */
+    breaks: z.array(scheduleBreakSchema).default([]),
+    /** dated overrides — holidays, closures, special openings */
+    exceptions: z.array(scheduleExceptionSchema).default([]),
   })
   // Zero-padded "HH:MM" (24h) sort lexicographically == chronologically. An
   // inverted range would silently yield zero bookable slots.

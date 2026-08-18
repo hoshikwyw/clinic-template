@@ -85,6 +85,24 @@ export const templateClinic = defineClinicConfig({
     closeTime: "17:00",
     slotMinutes: 30, // slot granularity
     bookingHorizonDays: 30, // how far ahead patients may book
+
+    // Recurring daily breaks — slots overlapping these are never offered.
+    // `days` is optional (defaults to every open day).
+    breaks: [
+      // { startTime: "12:30", endTime: "13:30", label: "Lunch" },
+      // { startTime: "14:00", endTime: "16:00", days: [3], label: "Ward round" },
+    ],
+
+    // Dated overrides — holidays, closures, one-off openings. EDIT YEARLY:
+    // once these dates are in the past they simply stop matching.
+    exceptions: [
+      // Closed for a single day (closed: true is the default):
+      // { from: "2027-01-01", label: "New Year" },
+      // Closed for a range (inclusive):
+      // { from: "2027-04-13", to: "2027-04-16", label: "Thingyan" },
+      // Special hours (also opens a day that is not normally an open day):
+      // { from: "2027-04-12", closed: false, openTime: "09:00", closeTime: "12:30" },
+    ],
   },
 
   // Labels for the booking contact step (relabel e.g. for a guardian).

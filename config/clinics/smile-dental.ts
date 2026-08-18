@@ -75,6 +75,19 @@ export const smileDental = defineClinicConfig({
     closeTime: "17:00",
     slotMinutes: 30,
     bookingHorizonDays: 30,
+    breaks: [{ startTime: "12:30", endTime: "13:30", label: "Lunch" }],
+    exceptions: [
+      // Thingyan (Myanmar new year) — the clinic is shut for the water festival.
+      { from: "2027-04-13", to: "2027-04-16", label: "Thingyan" },
+      // Half-day before the holiday.
+      {
+        from: "2027-04-12",
+        closed: false,
+        openTime: "09:00",
+        closeTime: "12:30",
+        label: "Thingyan eve (half day)",
+      },
+    ],
   },
   about:
     "Smile Dental Clinic has cared for families across Yangon for over 15 years. " +

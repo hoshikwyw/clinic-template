@@ -48,12 +48,23 @@ Colors accept any CSS color. See [04 — UI/UX System](./04-ui-ux-system.md).
 - [ ] `services` — bookable services (unique `id`s, durations, prices)
 - [ ] `intakeForm` — clinic-specific questions (rendered + validated by form-engine)
 - [ ] `businessHours`, `bookingRules`
+- [ ] `locale.phoneCountryCode` — dialling code without `+` (e.g. `"95"`). Set
+      this: it is what lets `09771…` and `+959771…` resolve to one patient
+      instead of two records.
+- [ ] `businessHours.breaks` — recurring lunch / cleaning / ward-round blocks
+- [ ] `businessHours.exceptions` — public holidays, closures, special openings
 - [ ] `contact`, `about`, `doctors`, `faq` — public-site content
 - [ ] `staffRoles` — role labels for the staff directory
 
 The config is validated at load: bad values (e.g. `defaultLang` not in
-`languages`, duplicate service ids, `openTime` after `closeTime`, a telehealth
-service without the telehealth module) fail fast with a clear error.
+`languages`, duplicate service ids, `openTime` after `closeTime`, a holiday date
+that is not a real calendar day, hours declared on a day marked closed, a
+telehealth service without the telehealth module) fail fast with a clear error.
+
+> **`exceptions` are dated, so they need a yearly pass.** Once a holiday is in
+> the past it simply stops matching — nothing breaks, but the clinic will start
+> taking bookings on next year's holiday unless the dates are refreshed. Put a
+> reminder in the clinic's calendar when you hand over.
 
 ## 4. Swap the app icons
 
