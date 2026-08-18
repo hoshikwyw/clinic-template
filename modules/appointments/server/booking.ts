@@ -2,11 +2,14 @@
 
 import { z } from "zod";
 import { getLocale } from "next-intl/server";
-import { and, eq, ne, desc } from "drizzle-orm";
+import { and, eq, desc, isNull, sql } from "drizzle-orm";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { getSessionUser } from "@auth";
+import { checkRateLimits } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-ip";
+import { normalizePhone } from "@/lib/phone";
 import { buildZodSchema } from "@form-engine/schema";
 import type { DaySlots } from "@modules/scheduling";
 import {
@@ -17,6 +20,7 @@ import {
   computeAvailableSlots,
   isUniqueViolation,
   moveAppointment,
+  occupiesSlot,
 } from "./core";
 import { toAppointmentDTO, type AppointmentDTO } from "../dto";
 
@@ -45,27 +49,107 @@ const createAppointmentInput = z.object({
 
 export type CreateAppointmentInput = z.infer<typeof createAppointmentInput>;
 
+/**
+ * Machine-readable failure reasons. The `error` string stays for backwards
+ * compatibility, but the UI should key off `code` — everything else in this app
+ * is translated, and a Burmese patient should not be shown an English sentence
+ * at the last step of a booking.
+ */
+export type BookingErrorCode =
+  | "invalid"
+  | "unknownService"
+  | "invalidIntake"
+  | "invalidTime"
+  | "slotTaken"
+  | "rateLimited"
+  | "dailyLimit";
+
 export interface BookingResult {
   ok: boolean;
   appointmentId?: string;
   serviceName?: string;
   startIso?: string;
+  code?: BookingErrorCode;
+  /** English fallback copy; prefer `code` for anything user-facing. */
   error?: string;
+  /** set when code === "rateLimited" — how long until they may retry */
+  retryAfterSeconds?: number;
 }
+
+/** English fallback copy, one per failure code. */
+const BOOKING_ERROR_TEXT: Record<BookingErrorCode, string> = {
+  invalid: "Invalid booking details.",
+  unknownService: "Unknown service.",
+  invalidIntake: "Please check the intake form details.",
+  invalidTime: "Invalid time.",
+  slotTaken: "Sorry, that slot was just taken. Pick another.",
+  rateLimited: "Too many booking attempts. Please try again shortly.",
+  dailyLimit: "You already have an appointment booked for that day.",
+};
+
+function bookingError(
+  code: BookingErrorCode,
+  extra?: { retryAfterSeconds?: number }
+): BookingResult {
+  return { ok: false, code, error: BOOKING_ERROR_TEXT[code], ...extra };
+}
+
+/**
+ * Abuse limits for the public (unauthenticated) booking endpoint.
+ *
+ * Sizing: a real patient books once, occasionally twice, and retries a couple
+ * of times when a slot is taken. A household or a clinic's own front desk may
+ * share one IP, hence the generous per-IP allowance; the per-phone limit is the
+ * tight one, because a slot-exhaustion script has to supply *some* number.
+ */
+const BOOKING_LIMITS = {
+  ipBurst: { limit: 8, windowSeconds: 600 },
+  ipDaily: { limit: 40, windowSeconds: 86_400 },
+  phoneDaily: { limit: 6, windowSeconds: 86_400 },
+} as const;
 
 /** Create a (guest) patient + appointment for a chosen slot. */
 export async function createAppointment(
   raw: CreateAppointmentInput
 ): Promise<BookingResult> {
   const parsed = createAppointmentInput.safeParse(raw);
-  if (!parsed.success) {
-    return { ok: false, error: "Invalid booking details." };
-  }
+  if (!parsed.success) return bookingError("invalid");
   const input = parsed.data;
 
   const config = getClinicConfig();
   const service = config.services.find((s) => s.id === input.serviceId);
-  if (!service) return { ok: false, error: "Unknown service." };
+  if (!service) return bookingError("unknownService");
+
+  // Canonical phone: used to match a returning guest to their existing record
+  // and as the rate-limit bucket, so reformatting the number doesn't reset it.
+  const phoneKey = normalizePhone(
+    input.contact.phone,
+    config.locale.phoneCountryCode
+  );
+
+  // Abuse guard. This endpoint is unauthenticated AND a booking locks a start
+  // time for the whole clinic, so an unthrottled caller can exhaust the entire
+  // booking horizon. Checked before any write, but after parsing, so the
+  // counters key off a real phone number rather than arbitrary input.
+  const ip = await getClientIp();
+  const limited = await checkRateLimits([
+    { scope: "booking:ip:burst", identifier: ip, ...BOOKING_LIMITS.ipBurst },
+    { scope: "booking:ip:daily", identifier: ip, ...BOOKING_LIMITS.ipDaily },
+    ...(phoneKey
+      ? [
+          {
+            scope: "booking:phone:daily",
+            identifier: phoneKey,
+            ...BOOKING_LIMITS.phoneDaily,
+          },
+        ]
+      : []),
+  ]);
+  if (!limited.ok) {
+    return bookingError("rateLimited", {
+      retryAfterSeconds: limited.retryAfterSeconds,
+    });
+  }
 
   // Validate intake server-side against THIS clinic's form definition. The
   // client validates too, but never trust it — this rejects crafted payloads
@@ -76,9 +160,7 @@ export async function createAppointment(
     const parsedIntake = buildZodSchema(config.intakeForm).safeParse(
       input.intake ?? {}
     );
-    if (!parsedIntake.success) {
-      return { ok: false, error: "Please check the intake form details." };
-    }
+    if (!parsedIntake.success) return bookingError("invalidIntake");
     intakeValue = parsedIntake.data as Record<string, unknown>;
   }
 
@@ -90,25 +172,16 @@ export async function createAppointment(
     : config.locale.defaultLang;
 
   const startAt = new Date(input.startIso);
-  if (Number.isNaN(startAt.getTime())) {
-    return { ok: false, error: "Invalid time." };
-  }
+  if (Number.isNaN(startAt.getTime())) return bookingError("invalidTime");
   const endAt = new Date(startAt.getTime() + service.durationMinutes * 60_000);
 
   // Guard against the slot being taken between listing and confirming.
   const clash = await db
     .select({ id: appointments.id })
     .from(appointments)
-    .where(
-      and(
-        eq(appointments.startAt, startAt),
-        ne(appointments.status, "cancelled")
-      )
-    )
+    .where(and(eq(appointments.startAt, startAt), occupiesSlot()))
     .limit(1);
-  if (clash.length > 0) {
-    return { ok: false, error: "Sorry, that slot was just taken. Pick another." };
-  }
+  if (clash.length > 0) return bookingError("slotTaken");
 
   // Logged-in patient → reuse/refresh their record; guest → create a new one.
   const user = await getSessionUser();
@@ -127,6 +200,7 @@ export async function createAppointment(
         .set({
           fullName: input.contact.fullName,
           phone: input.contact.phone,
+          phoneNormalized: phoneKey || null,
           email: input.contact.email || null,
           intake: intakeValue,
           locale: patientLocale,
@@ -140,6 +214,7 @@ export async function createAppointment(
           authUserId: user.id,
           fullName: input.contact.fullName,
           phone: input.contact.phone,
+          phoneNormalized: phoneKey || null,
           email: input.contact.email || null,
           intake: intakeValue,
           locale: patientLocale,
@@ -148,17 +223,76 @@ export async function createAppointment(
       patientId = created.id;
     }
   } else {
-    const [guest] = await db
-      .insert(patients)
-      .values({
-        fullName: input.contact.fullName,
-        phone: input.contact.phone,
-        email: input.contact.email || null,
-        intake: intakeValue,
-        locale: patientLocale,
-      })
-      .returning({ id: patients.id });
-    patientId = guest.id;
+    // Returning guest → reuse their record. Without this, every booking made
+    // without an account creates another patient row, and the staff directory
+    // fills up with duplicates of the same person under slightly different
+    // phone formatting. Matched on the normalised number, and only against
+    // other guests: a guest booking must never attach itself to a registered
+    // patient's record just because the numbers agree.
+    const [existingGuest] = phoneKey
+      ? await db
+          .select({ id: patients.id })
+          .from(patients)
+          .where(
+            and(
+              isNull(patients.authUserId),
+              eq(patients.phoneNormalized, phoneKey)
+            )
+          )
+          .orderBy(desc(patients.createdAt))
+          .limit(1)
+      : [];
+
+    if (existingGuest) {
+      patientId = existingGuest.id;
+      await db
+        .update(patients)
+        .set({
+          fullName: input.contact.fullName,
+          phone: input.contact.phone,
+          phoneNormalized: phoneKey || null,
+          email: input.contact.email || null,
+          intake: intakeValue,
+          locale: patientLocale,
+          updatedAt: new Date(),
+        })
+        .where(eq(patients.id, existingGuest.id));
+    } else {
+      const [guest] = await db
+        .insert(patients)
+        .values({
+          fullName: input.contact.fullName,
+          phone: input.contact.phone,
+          phoneNormalized: phoneKey || null,
+          email: input.contact.email || null,
+          intake: intakeValue,
+          locale: patientLocale,
+        })
+        .returning({ id: patients.id });
+      patientId = guest.id;
+    }
+  }
+
+  // Enforce the clinic's per-patient daily cap. This rule has been declared in
+  // ClinicConfig.bookingRules since the config engine shipped (and is set to 1
+  // in the pediatric sample) but was never actually applied — a config that
+  // lies is worse than no config. Counted in the clinic's own timezone, over
+  // appointments that still hold a slot.
+  const maxPerDay = config.bookingRules.maxPerDayPerPatient;
+  if (maxPerDay !== undefined) {
+    const tz = config.locale.timezone;
+    const [row] = await db
+      .select({ used: sql<number>`count(*)::int` })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.patientId, patientId),
+          occupiesSlot(),
+          sql`(${appointments.startAt} AT TIME ZONE ${tz})::date
+              = (${startAt.toISOString()}::timestamptz AT TIME ZONE ${tz})::date`
+        )
+      );
+    if (Number(row?.used ?? 0) >= maxPerDay) return bookingError("dailyLimit");
   }
 
   let appointmentId: string;

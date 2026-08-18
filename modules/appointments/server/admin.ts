@@ -101,18 +101,20 @@ export interface DashboardStats {
 
 /**
  * Dashboard stat counts, computed in SQL (one round-trip) instead of loading
- * every appointment into the page. "Today" is the clinic-timezone calendar day
- * and excludes cancelled; "upcoming" excludes cancelled.
+ * every appointment into the page. "Today" is the clinic-timezone calendar day.
+ * Both "today" and "upcoming" count only appointments that still hold their
+ * slot, so cancellations and no-shows drop out of the front-desk numbers.
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
   await requireStaff();
   const tz = getClinicConfig().locale.timezone;
+  const active = sql`${appointments.status}::text not in ('cancelled', 'no_show')`;
 
   const [row] = await db
     .select({
-      today: sql<number>`(count(*) filter (where ${appointments.status} <> 'cancelled' and (${appointments.startAt} AT TIME ZONE ${tz})::date = (now() AT TIME ZONE ${tz})::date))::int`,
+      today: sql<number>`(count(*) filter (where ${active} and (${appointments.startAt} AT TIME ZONE ${tz})::date = (now() AT TIME ZONE ${tz})::date))::int`,
       pending: sql<number>`(count(*) filter (where ${appointments.status} = 'pending'))::int`,
-      upcoming: sql<number>`(count(*) filter (where ${appointments.status} <> 'cancelled' and ${appointments.startAt} >= now()))::int`,
+      upcoming: sql<number>`(count(*) filter (where ${active} and ${appointments.startAt} >= now()))::int`,
       total: sql<number>`count(*)::int`,
     })
     .from(appointments);
@@ -130,9 +132,10 @@ const statusSchema = z.enum([
   "confirmed",
   "cancelled",
   "completed",
+  "no_show",
 ]);
 
-/** Update an appointment's status (confirm / cancel / complete). */
+/** Update an appointment's status (confirm / cancel / complete / no-show). */
 export async function updateAppointmentStatus(
   id: string,
   status: string

@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@db/index";
 import { patients } from "@db/schema";
 import { getSessionUser } from "@auth";
+import { getClinicConfig } from "@/config/clinic";
+import { normalizePhone } from "@/lib/phone";
 
 /**
  * Patient profile actions for the logged-in user. Trusted Drizzle connection;
@@ -74,6 +76,10 @@ export async function updateMyProfile(
   if (!parsed.success) return { ok: false, error: "invalid" };
   const input = parsed.data;
   const dob = input.dateOfBirth ? input.dateOfBirth : null;
+  // Keep the dedupe key in step with the displayed number (see lib/phone.ts).
+  const phoneNormalized =
+    normalizePhone(input.phone, getClinicConfig().locale.phoneCountryCode) ||
+    null;
 
   const [existing] = await db
     .select({ id: patients.id })
@@ -87,6 +93,7 @@ export async function updateMyProfile(
       .set({
         fullName: input.fullName,
         phone: input.phone,
+        phoneNormalized,
         email: input.email || null,
         dateOfBirth: dob,
         updatedAt: new Date(),
@@ -97,6 +104,7 @@ export async function updateMyProfile(
       authUserId: user.id,
       fullName: input.fullName,
       phone: input.phone,
+      phoneNormalized,
       email: input.email || null,
       dateOfBirth: dob,
     });

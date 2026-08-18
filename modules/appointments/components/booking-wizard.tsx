@@ -109,6 +109,22 @@ export function BookingWizard({
     }).format(new Date(iso));
   }
 
+  /**
+   * Translate a booking failure. Keys off the server's machine-readable `code`
+   * and falls back to its English `error` only for a result produced before
+   * codes existed — the whole rest of this app is translated, so a Burmese
+   * patient must not hit an English sentence at the final step.
+   */
+  function bookingErrorMessage(res: BookingResult): string {
+    if (!res.code) return res.error ?? t("errorGeneric");
+    if (res.code === "rateLimited" && res.retryAfterSeconds) {
+      return t("errorRateLimitedIn", {
+        minutes: Math.max(1, Math.ceil(res.retryAfterSeconds / 60)),
+      });
+    }
+    return t(`error_${res.code}`);
+  }
+
   async function chooseService(id: string) {
     setServiceId(id);
     setSlot(null);
@@ -342,7 +358,7 @@ export function BookingWizard({
 
           {result && !result.ok && (
             <p className="text-sm font-medium text-destructive">
-              {result.error}
+              {bookingErrorMessage(result)}
             </p>
           )}
 

@@ -9,6 +9,9 @@ export const STATUS_STYLES: Record<string, string> = {
   completed:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   cancelled: "bg-muted text-muted-foreground",
+  // Distinct from cancelled: a no-show cost the clinic the slot, so it reads as
+  // a problem rather than a neutral "didn't happen".
+  no_show: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
 };
 
 /** Canonical display order for status breakdowns. */
@@ -16,5 +19,6 @@ export const STATUS_ORDER = [
   "pending",
   "confirmed",
   "completed",
+  "no_show",
   "cancelled",
 ] as const;

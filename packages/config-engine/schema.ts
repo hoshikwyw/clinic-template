@@ -56,6 +56,16 @@ export const localeSchema = z
     defaultLang: z.string().min(1),
     timezone: z.string().min(1),
     currency: z.string().min(1),
+    /**
+     * Country dialling code without `+`, e.g. "95" for Myanmar. Used to
+     * normalise patient phone numbers so `09771…` and `+959771…` resolve to the
+     * same person (see lib/phone.ts). Optional — without it, numbers are only
+     * stripped of formatting, which dedupes less reliably.
+     */
+    phoneCountryCode: z
+      .string()
+      .regex(/^\d{1,4}$/, "must be digits only, without the leading +")
+      .optional(),
   })
   .refine((l) => l.languages.includes(l.defaultLang), {
     error: "defaultLang must be one of the enabled languages",

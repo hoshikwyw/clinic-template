@@ -11,12 +11,31 @@ import {
 } from "drizzle-orm/pg-core";
 import { patients } from "./patients";
 
+/**
+ * `no_show` is what the clinic is actually buying reminders for: without it
+ * there is no way to measure whether the product reduced missed appointments.
+ * It is a terminal status like `cancelled` and, like `cancelled`, it releases
+ * the slot (see appointments_active_slot_unique).
+ */
 export const appointmentStatus = pgEnum("appointment_status", [
   "pending",
   "confirmed",
   "cancelled",
   "completed",
+  "no_show",
 ]);
+
+/**
+ * Statuses that still hold a time slot. Cancelled and no-show appointments free
+ * the time again, so they must never block availability, the daily per-patient
+ * cap, or the unique-slot index. Keep this in lockstep with the index predicate
+ * below — the DB is the authority, this is how the app agrees with it.
+ */
+export const OCCUPYING_STATUSES = [
+  "pending",
+  "confirmed",
+  "completed",
+] as const;
 
 /**
  * appointments — a booked slot for a service at THIS clinic.
@@ -53,12 +72,15 @@ export const appointments = pgTable(
   (t) => [
     index("appointments_start_at_idx").on(t.startAt),
     index("appointments_patient_idx").on(t.patientId),
-    // Single-provider MVP: at most one active (non-cancelled) booking per start
-    // time. Makes the booking clash-check atomic at the DB level, closing the
-    // check-then-insert race in createAppointment.
+    // Single-provider MVP: at most one active booking per start time. Makes the
+    // booking clash-check atomic at the DB level, closing the check-then-insert
+    // race in createAppointment.
+    // Compared as text, not as the enum, so the predicate can be created in the
+    // same migration that adds a new enum value (Postgres refuses to use a
+    // freshly-added enum label inside the transaction that added it).
     uniqueIndex("appointments_active_slot_unique")
       .on(t.startAt)
-      .where(sql`status <> 'cancelled'`),
+      .where(sql`status::text not in ('cancelled', 'no_show')`),
     pgPolicy("appointments_self_select", {
       for: "select",
       to: "authenticated",

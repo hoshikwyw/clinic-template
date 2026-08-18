@@ -20,6 +20,25 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      # Guard against the whole route tree silently vanishing from the repo.
+      # This already happened once (commit 19268ea): an unreadable directory
+      # made `git add -A` record every app/ and public/ file as deleted, and
+      # `git status` reported clean afterwards. `pnpm build` catches a missing
+      # app/ too, but only after ~2 minutes of setup — and not the assets.
+      - name: Verify tracked file tree
+        run: |
+          fail=0
+          for f in app/layout.tsx app/globals.css app/manifest.ts \
+                   "app/(public)/page.tsx" "app/(portal)/portal/page.tsx" \
+                   "app/(admin)/admin/page.tsx" app/api/cron/reminders/route.ts \
+                   public/icon.svg public/sw.js; do
+            if ! git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::Not tracked by git — the route tree is incomplete."
+              fail=1
+            fi
+          done
+          exit $fail
+
       - run: pnpm install --frozen-lockfile
 
       - name: Lint

@@ -172,7 +172,8 @@
     "pending": "Pending",
     "confirmed": "Confirmed",
     "completed": "Completed",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "no_show": "No-show"
   },
   "reports": {
     "navReports": "Reports",
@@ -257,6 +258,15 @@
     "booking": "Booking…",
     "requested": "Appointment requested",
     "contactNote": "We'll contact you to confirm. Please keep your phone reachable.",
-    "bookAnother": "Book another"
+    "bookAnother": "Book another",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "error_invalid": "Please check your booking details.",
+    "error_unknownService": "That service is no longer offered. Please choose another.",
+    "error_invalidIntake": "Please check the intake form details.",
+    "error_invalidTime": "That time is no longer valid. Please pick another.",
+    "error_slotTaken": "Sorry, that time was just taken. Please pick another.",
+    "error_rateLimited": "Too many booking attempts. Please try again shortly.",
+    "errorRateLimitedIn": "Too many booking attempts. Please try again in about {minutes} minute(s).",
+    "error_dailyLimit": "You already have an appointment booked for that day. Please call the clinic if you need another."
   }
 }

@@ -11,3 +11,4 @@
 
 export * from "./patients";
 export * from "./appointments";
+export * from "./rate-limits";

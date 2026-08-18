@@ -18,6 +18,7 @@
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
     "new-clinic": "tsx scripts/new-clinic.ts",
     "set-role": "dotenv -e .env.local -- tsx scripts/set-role.ts",
+    "backfill-phones": "dotenv -e .env.local -- tsx scripts/backfill-phones.ts",
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync"
   },

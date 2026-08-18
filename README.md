@@ -70,6 +70,18 @@ Fill in `.env.local` from your Supabase project (Settings → API / Database):
 pnpm db:migrate
 ```
 
+**Upgrading an existing deployment past migration `0006`:** that migration adds
+`patients.phone_normalized`, the key used to match a returning guest to their
+existing record. Existing rows are left `null` — backfill them once:
+
+```bash
+pnpm backfill-phones           # dry run, shows how many rows change
+pnpm backfill-phones --apply
+```
+
+Set `locale.phoneCountryCode` in the clinic config first, or national and
+international forms of the same number won't collapse together.
+
 ### 4. Run
 
 ```bash

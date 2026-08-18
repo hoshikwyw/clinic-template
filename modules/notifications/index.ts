@@ -7,9 +7,9 @@
  *
  * See docs/02-architecture.md ("Feature Modules").
  */
-import { and, eq, gte, lte, ne, isNull, inArray } from "drizzle-orm";
+import { and, eq, gte, lte, isNull, inArray } from "drizzle-orm";
 import { db } from "@db/index";
-import { appointments, patients } from "@db/schema";
+import { appointments, patients, OCCUPYING_STATUSES } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { getEmailProvider } from "./email";
 import { bookedEmail, statusEmail, reminderEmail } from "./messages";
@@ -104,7 +104,7 @@ export async function sendDueReminders(): Promise<ReminderRunResult> {
       and(
         gte(appointments.startAt, now),
         lte(appointments.startAt, until),
-        ne(appointments.status, "cancelled"),
+        inArray(appointments.status, [...OCCUPYING_STATUSES]),
         isNull(appointments.reminderSentAt)
       )
     );

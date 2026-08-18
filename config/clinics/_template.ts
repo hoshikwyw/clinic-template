@@ -42,6 +42,7 @@ export const templateClinic = defineClinicConfig({
     defaultLang: "en", // must be one of `languages`
     timezone: "Asia/Yangon", // EDIT: IANA timezone
     currency: "MMK", // EDIT: ISO currency code shown next to prices
+    phoneCountryCode: "95", // EDIT: dialling code, no "+". Dedupes patient phones.
   },
 
   // Turn features on/off. `billing` is a placeholder (not implemented yet).

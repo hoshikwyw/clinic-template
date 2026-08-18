@@ -21,6 +21,7 @@ export const littleStarsPediatric = defineClinicConfig({
     defaultLang: "my",
     timezone: "Asia/Yangon",
     currency: "MMK",
+    phoneCountryCode: "95",
   },
   modules: {
     appointments: true,

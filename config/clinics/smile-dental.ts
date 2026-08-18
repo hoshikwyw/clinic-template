@@ -21,6 +21,7 @@ export const smileDental = defineClinicConfig({
     defaultLang: "en",
     timezone: "Asia/Yangon",
     currency: "MMK",
+    phoneCountryCode: "95",
   },
   modules: {
     appointments: true,

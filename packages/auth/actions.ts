@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@db/index";
 import { patients } from "@db/schema";
+import { getClinicConfig } from "@/config/clinic";
+import { normalizePhone } from "@/lib/phone";
 
 /**
  * Auth server actions (email + password). Single-tenant: every self sign-up is
@@ -40,7 +42,11 @@ export async function signUp(input: {
   const { data, error } = await supabase.auth.signUp({
     email: input.email,
     password: input.password,
-    options: { data: { full_name: input.fullName, role: "patient" } },
+    // NOTE: no `role` here. user_metadata is self-editable by the account
+    // holder, so a role written here would be a privilege-escalation trap for
+    // whoever reads it next. Authorization roles live in app_metadata and are
+    // only ever set with the service role — see packages/auth/index.ts.
+    options: { data: { full_name: input.fullName } },
   });
   if (error) return { ok: false, error: error.message };
 
@@ -50,6 +56,11 @@ export async function signUp(input: {
       authUserId: data.user.id,
       fullName: input.fullName,
       phone: input.phone,
+      phoneNormalized:
+        normalizePhone(
+          input.phone,
+          getClinicConfig().locale.phoneCountryCode
+        ) || null,
       email: input.email,
     });
   }

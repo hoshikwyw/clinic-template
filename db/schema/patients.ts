@@ -7,6 +7,7 @@ import {
   date,
   jsonb,
   timestamp,
+  index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
@@ -27,7 +28,16 @@ export const patients = pgTable(
     /** links to auth.users when the patient has an account; null for guests */
     authUserId: uuid("auth_user_id"),
     fullName: text("full_name").notNull(),
+    /** exactly what the patient typed — this is what staff read and dial */
     phone: text("phone").notNull(),
+    /**
+     * Canonical, digits-only form of `phone` (see lib/phone.ts). Exists so a
+     * returning guest can be matched to their existing record instead of
+     * creating a duplicate, and so the match is an indexed equality rather than
+     * a regex scan over every patient. Nullable: rows created before this
+     * column existed stay null until `pnpm backfill-phones` runs.
+     */
+    phoneNormalized: text("phone_normalized"),
     email: text("email"),
     /** preferred language (e.g. "en", "my") — captured at booking, used for emails */
     locale: text("locale"),
@@ -48,6 +58,10 @@ export const patients = pgTable(
     uniqueIndex("patients_auth_user_id_unique")
       .on(t.authUserId)
       .where(sql`auth_user_id is not null`),
+    // Guest-booking dedupe lookup. Deliberately NOT unique: two family members
+    // legitimately share a phone, and a guest row plus a registered row for the
+    // same number must both be allowed to exist.
+    index("patients_phone_normalized_idx").on(t.phoneNormalized),
     pgPolicy("patients_self_select", {
       for: "select",
       to: "authenticated",

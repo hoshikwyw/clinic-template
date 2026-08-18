@@ -1,7 +1,7 @@
-import { and, eq, gte, ne } from "drizzle-orm";
+import { and, eq, gte, inArray } from "drizzle-orm";
 import { getLocale } from "next-intl/server";
 import { db } from "@db/index";
-import { appointments } from "@db/schema";
+import { appointments, OCCUPYING_STATUSES } from "@db/schema";
 import { getClinicConfig } from "@/config/clinic";
 import { generateDaySlots, type DaySlots } from "@modules/scheduling";
 import type { ActionResult } from "../dto";
@@ -13,6 +13,16 @@ import type { ActionResult } from "../dto";
  * points build on it so they don't duplicate slot availability or the
  * move/reschedule flow. Pure types/mappers live in ../dto.
  */
+
+/**
+ * SQL condition for "this appointment still occupies its slot" — i.e. it is not
+ * cancelled and not a no-show. Mirrors the partial unique index in
+ * db/schema/appointments.ts; use it anywhere availability or per-patient caps
+ * are computed so the app and the database never disagree about what is booked.
+ */
+export function occupiesSlot() {
+  return inArray(appointments.status, [...OCCUPYING_STATUSES]);
+}
 
 /** Postgres unique-violation (e.g. two writes racing for the same slot). */
 export function isUniqueViolation(err: unknown): boolean {
@@ -45,12 +55,7 @@ export async function computeAvailableSlots(
   const booked = await db
     .select({ startAt: appointments.startAt })
     .from(appointments)
-    .where(
-      and(
-        ne(appointments.status, "cancelled"),
-        gte(appointments.startAt, new Date())
-      )
-    );
+    .where(and(occupiesSlot(), gte(appointments.startAt, new Date())));
   const taken = new Set(booked.map((b) => b.startAt.toISOString()));
 
   return days
