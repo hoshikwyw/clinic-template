@@ -89,6 +89,7 @@ describe.runIf(available)("database integration", () => {
       `;
       expect(rows.map((r) => r.table_name)).toEqual([
         "appointments",
+        "audit_log",
         "patients",
         "rate_limits",
       ]);
@@ -97,7 +98,7 @@ describe.runIf(available)("database integration", () => {
     it("has row-level security on every table holding patient data", async () => {
       const rows = await db.sql<{ relname: string; relrowsecurity: boolean }[]>`
         select relname, relrowsecurity from pg_class
-        where relname in ('patients', 'appointments', 'rate_limits')
+        where relname in ('patients', 'appointments', 'rate_limits', 'audit_log')
       `;
       for (const r of rows) expect(r.relrowsecurity).toBe(true);
     });

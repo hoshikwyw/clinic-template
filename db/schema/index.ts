@@ -12,3 +12,4 @@
 export * from "./patients";
 export * from "./appointments";
 export * from "./rate-limits";
+export * from "./audit-log";

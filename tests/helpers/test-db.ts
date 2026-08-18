@@ -172,8 +172,10 @@ export async function createTestDb(): Promise<TestDb> {
     sql,
     async truncate() {
       await sql.unsafe(`reset role`);
-      // appointments cascade from patients; rate_limits is independent.
-      await sql.unsafe(`truncate patients, rate_limits restart identity cascade`);
+      // appointments cascade from patients; the rest are independent.
+      await sql.unsafe(
+        `truncate patients, rate_limits, audit_log restart identity cascade`
+      );
     },
     async asUser(userId, claims) {
       // Mirrors what Supabase's PostgREST sets from a verified JWT.

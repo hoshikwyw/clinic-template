@@ -4,6 +4,7 @@ import { asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@db/index";
 import { patients, appointments } from "@db/schema";
 import { requireStaff } from "@auth";
+import { recordAudit } from "@modules/audit";
 import { toAppointmentDTO, type AppointmentDTO } from "@modules/appointments";
 import { PATIENTS_PAGE_SIZE } from "../pagination";
 
@@ -66,6 +67,16 @@ export async function getPatientsList(opts: {
     .limit(limit)
     .offset(offset);
 
+  const total = rows[0] ? Number(rows[0].total) : 0;
+
+  // Log that the directory was browsed, and how wide the search was — but never
+  // the search text itself, which is typically a patient's name.
+  await recordAudit({
+    action: "patient.list",
+    subjectType: "patient",
+    metadata: { returned: rows.length, total, searched: q.length > 0, offset },
+  });
+
   return {
     items: rows.map((r) => ({
       id: r.id,
@@ -74,7 +85,7 @@ export async function getPatientsList(opts: {
       email: r.email,
       appointmentCount: Number(r.count),
     })),
-    total: rows[0] ? Number(rows[0].total) : 0,
+    total,
   };
 }
 
@@ -115,6 +126,15 @@ export async function getPatientDetail(
     .from(appointments)
     .where(eq(appointments.patientId, id))
     .orderBy(desc(appointments.startAt));
+
+  // The one that matters most: this returns the intake answers, so it is the
+  // access a patient would actually be asking about.
+  await recordAudit({
+    action: "patient.view",
+    subjectType: "patient",
+    subjectId: id,
+    metadata: { appointments: appts.length, hasIntake: p.intake !== null },
+  });
 
   return {
     id: p.id,

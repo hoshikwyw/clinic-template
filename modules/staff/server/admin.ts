@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { requireAdmin, type UserRole } from "@auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAudit } from "@modules/audit";
 
 /**
  * Staff / role management. ADMIN ONLY — assigning roles is privileged, so these
@@ -62,6 +63,16 @@ async function applyRole(userId: string, role: UserRole): Promise<SetRoleResult>
     app_metadata: { role },
   });
   if (error) return { ok: false, error: "failed" };
+
+  // Privilege changes are the highest-consequence action in the app: granting
+  // "staff" hands someone the whole patient directory. Always audited.
+  await recordAudit({
+    action: "staff.role",
+    subjectType: "staff",
+    subjectId: userId,
+    metadata: { role },
+  });
+
   return { ok: true };
 }
 

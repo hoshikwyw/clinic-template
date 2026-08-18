@@ -22,6 +22,10 @@ Decisions to lock down before / during the build. Update this file as we resolve
   config in code. No shared multi-clinic DB, no `clinic_id`, no vendor
   super-admin. RLS is role-based within the clinic. See
   [00 — Overview](./00-overview.md) and [02 — Architecture](./02-architecture.md).
+- **#6 Audit logging → BUILT** (2026-08-18). `audit_log` + `modules/audit`
+  record every staff-facing access to patient data, with no PHI in the entries
+  themselves. This was listed as a security recommendation for three sessions;
+  it is no longer outstanding. Retention policy is still undecided — see #5.
 - **#4 Sample clinic → Dental (Smile Dental)** (2026-06-25). One sample clinic
   shown for now; the engine is config-driven so other specialties are just
   different configs (see `config/clinics/` examples).

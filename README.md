@@ -30,6 +30,8 @@ Supabase.
 - **Accessibility** — WCAG-minded, text-size + high-contrast controls, 44px+ targets
 - **Auth & roles** — Supabase email/password, guest booking, roles in secure
   `app_metadata`
+- **Audit trail** — every staff-facing access to patient data is recorded (who,
+  what, when) in an `audit_log` the browser cannot read, containing no PHI
 
 ## Tech stack
 

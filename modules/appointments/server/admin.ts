@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@db/index";
 import { appointments, patients } from "@db/schema";
 import { requireStaff } from "@auth";
+import { recordAudit } from "@modules/audit";
 import { getClinicConfig } from "@/config/clinic";
 import { notifyAppointmentStatus } from "@modules/notifications";
 import { moveAppointment } from "./core";
@@ -75,6 +76,15 @@ export async function getAllAppointments(): Promise<AdminAppointment[]> {
     .from(appointments)
     .innerJoin(patients, eq(appointments.patientId, patients.id))
     .orderBy(desc(appointments.startAt));
+
+  // Bulk extraction: this is every patient's name and phone number leaving the
+  // system in one file. If anything in the app deserves an audit entry, it is
+  // this one.
+  await recordAudit({
+    action: "patient.export",
+    subjectType: "patient",
+    metadata: { rows: rows.length },
+  });
 
   return rows.map(toAdminAppointment);
 }
@@ -152,6 +162,13 @@ export async function updateAppointmentStatus(
     .set({ status: parsed, updatedAt: new Date() })
     .where(eq(appointments.id, id));
 
+  await recordAudit({
+    action: "appointment.status",
+    subjectType: "appointment",
+    subjectId: id,
+    metadata: { status: parsed },
+  });
+
   // Notify the patient on meaningful transitions.
   if (parsed === "confirmed" || parsed === "cancelled") {
     const [row] = await db
@@ -216,6 +233,16 @@ export async function rescheduleAppointment(
     startIso,
     row.providerId
   );
-  if (result.ok) revalidatePath("/admin");
+
+  if (result.ok) {
+    await recordAudit({
+      action: "appointment.reschedule",
+      subjectType: "appointment",
+      subjectId: appointmentId,
+      // The new time is operational data, not PHI — it says nothing clinical.
+      metadata: { startIso },
+    });
+    revalidatePath("/admin");
+  }
   return result;
 }

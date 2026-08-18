@@ -86,7 +86,19 @@ Healthcare data is high-stakes even on a budget:
 
 - **Role-based RLS** (patient can see only their own records; staff per role),
   enforced at the database — never trust the app layer alone.
-- **Audit logging** for any access to patient data (who saw what, when).
+- **Audit logging** for any access to patient data (who saw what, when) —
+  implemented in [`modules/audit`](../modules/audit/index.ts), writing to the
+  `audit_log` table. Every staff-facing read or change of patient data records
+  the actor, the action and the record: opening a patient's file, browsing the
+  directory, the CSV export (bulk contact details leaving the system), status
+  changes, reschedules, and role grants.
+  The log holds **no PHI** — counts, ids and status transitions only, never a
+  name, a number, or a search term. An audit trail that leaks the records it
+  protects is worse than none.
+  It is an audit *trail*, not a tamper-evident ledger: the write is a separate
+  statement from the action it describes, and it never throws, because an audit
+  outage must not stop patient care. A deployment needing the stronger
+  guarantee should use a database trigger.
 - **No PHI** in logs, analytics, or long-lived client-side state.
 - Design for an eventual **HIPAA / GDPR** posture depending on region — costs
   little now, prevents a rebuild later.
