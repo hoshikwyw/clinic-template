@@ -235,7 +235,8 @@
     "statusSubject": "{headline} — {clinic}",
     "statusBody": "{headline}: {service} on {when}.",
     "reminderSubject": "Reminder: your appointment — {clinic}",
-    "reminderBody": "This is a reminder for your {service} appointment on {when}."
+    "reminderBody": "This is a reminder for your {service} appointment on {when}.",
+    "withProvider": "with {name}"
   },
   "booking": {
     "stepService": "Choose a service",

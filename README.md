@@ -23,8 +23,10 @@ Supabase.
 - **i18n** — English + Myanmar, in-app language switch, locale-aware dates, and
   **per-patient** notification emails
 - **Telehealth** — video consultations via Jitsi (no API key) for flagged services
-- **Notifications** — booking / status / reminder emails (Resend, or a console
-  no-op without a key) + a reminder cron
+- **Notifications** — booking / status / reminder messages by **email and/or
+  SMS**, per clinic config. Email via Resend; SMS via Twilio or a generic HTTP
+  webhook (for local carriers) — each a console no-op when unconfigured. Plus a
+  reminder cron with a config-driven lead time.
 - **Accessibility** — WCAG-minded, text-size + high-contrast controls, 44px+ targets
 - **Auth & roles** — Supabase email/password, guest booking, roles in secure
   `app_metadata`
@@ -62,6 +64,7 @@ Fill in `.env.local` from your Supabase project (Settings → API / Database):
   `SUPABASE_SERVICE_ROLE_KEY`
 - `DATABASE_URL` — use the **connection pooler** URL (port 6543)
 - Optional: `RESEND_API_KEY` + `EMAIL_FROM` (else emails are console no-ops),
+  `SMS_PROVIDER` + its credentials (else SMS is a console no-op),
   `CRON_SECRET` (protects the reminder cron)
 
 ### 3. Set up the database

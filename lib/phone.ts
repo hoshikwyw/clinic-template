@@ -50,6 +50,21 @@ export function normalizePhone(raw: string, dialCode?: string): string {
 }
 
 /**
+ * E.164 form (`+959771234567`) — what SMS gateways expect.
+ *
+ * Returns null when there is no dialling code to work from: a bare national
+ * number is not routable, and sending it anyway would either fail at the
+ * gateway or, worse, reach a stranger in another country.
+ */
+export function toE164(raw: string, dialCode?: string): string | null {
+  if (!dialCode) return null;
+  const normalized = normalizePhone(raw, dialCode);
+  // Shortest real international numbers are ~8 digits; anything less is a typo.
+  if (normalized.length < 8) return null;
+  return `+${normalized}`;
+}
+
+/**
  * Do two numbers refer to the same person? Compares canonical forms, then falls
  * back to the last 8 significant digits so a missing/incorrect country code
  * doesn't split one patient into two records.

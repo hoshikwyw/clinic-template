@@ -235,7 +235,8 @@
     "statusSubject": "{headline} — {clinic}",
     "statusBody": "{headline}: {when} တွင် {service}။",
     "reminderSubject": "သတိပေးချက် — သင့်ချိန်းဆိုမှု — {clinic}",
-    "reminderBody": "{when} တွင် သင့် {service} ချိန်းဆိုမှုအတွက် သတိပေးချက် ဖြစ်ပါသည်။"
+    "reminderBody": "{when} တွင် သင့် {service} ချိန်းဆိုမှုအတွက် သတိပေးချက် ဖြစ်ပါသည်။",
+    "withProvider": "{name} နှင့်"
   },
   "booking": {
     "stepService": "ဝန်ဆောင်မှု ရွေးချယ်ပါ",

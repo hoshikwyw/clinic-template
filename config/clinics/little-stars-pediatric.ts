@@ -78,6 +78,12 @@ export const littleStarsPediatric = defineClinicConfig({
     cancellationWindowHours: 12,
     maxPerDayPerPatient: 1,
   },
+  notifications: {
+    // Guardians of small children book at short notice and rarely check email;
+    // a same-morning SMS is worth far more than a day-ahead one.
+    channels: ["sms"],
+    reminderHoursBefore: 3,
+  },
   businessHours: {
     openDays: [1, 2, 3, 4, 5], // Mon–Fri
     openTime: "08:30",

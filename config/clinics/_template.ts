@@ -79,6 +79,13 @@ export const templateClinic = defineClinicConfig({
     // maxPerDayPerPatient: 1,
   },
 
+  // How patients are notified. `modules.notifications` is the on/off switch;
+  // this is how it behaves. SMS needs locale.phoneCountryCode (validated).
+  notifications: {
+    channels: ["email"], // EDIT: add "sms" — phone is required, email is not
+    reminderHoursBefore: 24,
+  },
+
   businessHours: {
     openDays: [1, 2, 3, 4, 5], // 0=Sun … 6=Sat
     openTime: "09:00",

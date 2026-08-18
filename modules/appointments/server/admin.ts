@@ -157,9 +157,11 @@ export async function updateAppointmentStatus(
     const [row] = await db
       .select({
         email: patients.email,
+        phone: patients.phone,
         name: patients.fullName,
         locale: patients.locale,
         serviceName: appointments.serviceName,
+        providerName: appointments.providerName,
         startAt: appointments.startAt,
       })
       .from(appointments)
@@ -169,11 +171,13 @@ export async function updateAppointmentStatus(
     if (row) {
       await notifyAppointmentStatus({
         to: row.email,
+        phone: row.phone,
         patientName: row.name,
         serviceName: row.serviceName,
         startIso: row.startAt.toISOString(),
         status: parsed,
         locale: row.locale,
+        providerName: row.providerName,
       });
     }
   }

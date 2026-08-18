@@ -51,6 +51,13 @@ Colors accept any CSS color. See [04 — UI/UX System](./04-ui-ux-system.md).
 - [ ] `locale.phoneCountryCode` — dialling code without `+` (e.g. `"95"`). Set
       this: it is what lets `09771…` and `+959771…` resolve to one patient
       instead of two records.
+- [ ] `notifications` — `channels` and `reminderHoursBefore`.
+      **Consider `"sms"`.** `patients.phone` is required and `patients.email` is
+      not, so an email-only clinic reaches only the fraction of patients who
+      gave an address — and reminders are the feature with a measurable return
+      (fewer no-shows). SMS needs `locale.phoneCountryCode`, and the gateway is
+      env, not config (`SMS_PROVIDER` — see `.env.example`); `webhook` mode
+      takes a local carrier's HTTP endpoint with no code change.
 - [ ] `businessHours.breaks` — recurring lunch / cleaning / ward-round blocks
 - [ ] `businessHours.exceptions` — public holidays, closures, special openings
 - [ ] `providers` — the bookable clinicians (or chairs, or rooms). Each gets its

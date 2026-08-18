@@ -381,10 +381,14 @@ export async function createAppointment(
 
   await notifyAppointmentBooked({
     to: input.contact.email || null,
+    phone: input.contact.phone,
     patientName: input.contact.fullName,
     serviceName: service.name,
     startIso: confirmedStartIso,
     locale: patientLocale,
+    providerName: assignedProvider
+      ? findProvider(config, assignedProvider)?.name
+      : null,
   });
 
   return {
@@ -445,8 +449,10 @@ export async function cancelMyAppointment(
       startAt: appointments.startAt,
       status: appointments.status,
       serviceName: appointments.serviceName,
+      providerName: appointments.providerName,
       patientName: patients.fullName,
       email: patients.email,
+      phone: patients.phone,
       locale: patients.locale,
     })
     .from(appointments)
@@ -475,11 +481,13 @@ export async function cancelMyAppointment(
 
   await notifyAppointmentStatus({
     to: row.email,
+    phone: row.phone,
     patientName: row.patientName,
     serviceName: row.serviceName,
     startIso: row.startAt.toISOString(),
     status: "cancelled",
     locale: row.locale,
+    providerName: row.providerName,
   });
 
   return { ok: true };

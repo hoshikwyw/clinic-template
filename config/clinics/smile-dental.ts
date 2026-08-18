@@ -69,6 +69,12 @@ export const smileDental = defineClinicConfig({
     leadTimeHours: 2,
     cancellationWindowHours: 24,
   },
+  notifications: {
+    // Phone is a required patient field and email is not, so SMS is what
+    // actually reaches everyone. Email rides along for those who gave one.
+    channels: ["email", "sms"],
+    reminderHoursBefore: 24,
+  },
   businessHours: {
     openDays: [1, 2, 3, 4, 5, 6], // Mon–Sat
     openTime: "09:00",

@@ -238,6 +238,29 @@ export const bookingContactSchema = z.object({
 });
 export type BookingContact = z.infer<typeof bookingContactSchema>;
 
+/** Delivery channels a clinic can reach patients on. */
+export const NOTIFICATION_CHANNELS = ["email", "sms"] as const;
+export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
+
+/**
+ * How this clinic notifies patients. Distinct from `modules.notifications`,
+ * which is the on/off switch — these are the settings it runs with.
+ *
+ * `email` is the default only because it needs no gateway account. Note that
+ * `patients.email` is optional while `patients.phone` is required, so an
+ * email-only clinic silently reaches a fraction of its patients; enabling `sms`
+ * is what makes reminders actually land.
+ */
+export const notificationSettingsSchema = z.object({
+  channels: z.array(z.enum(NOTIFICATION_CHANNELS)).min(1).default(["email"]),
+  /**
+   * How long before an appointment the reminder goes out. The cron runs hourly,
+   * so this is accurate to the hour.
+   */
+  reminderHoursBefore: z.number().int().positive().default(24),
+});
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
+
 /** Clinic contact details, shown on the help/contact page + landing map. */
 export const contactInfoSchema = z.object({
   phone: z.string().optional(),
@@ -346,6 +369,8 @@ const clinicConfigBaseSchema = z.object({
   bookingRules: bookingRulesSchema,
   businessHours: businessHoursSchema.prefault({}),
   bookingContact: bookingContactSchema.prefault({}),
+  /** channels + reminder timing (see modules.notifications for the on/off switch) */
+  notifications: notificationSettingsSchema.prefault({}),
   /** help-center contact details + FAQ (optional, clinic-authored) */
   contact: contactInfoSchema.optional(),
   faq: z.array(faqItemSchema).default([]),
@@ -391,6 +416,21 @@ export const clinicConfigSchema = clinicConfigBaseSchema.superRefine(
             path: ["services", i, "telehealth"],
           });
         }
+      });
+    }
+
+    // SMS needs E.164 numbers, which needs the dialling code. Without it every
+    // message would be silently dropped before it reached the gateway — the
+    // clinic would believe reminders were going out.
+    if (
+      cfg.notifications.channels.includes("sms") &&
+      !cfg.locale.phoneCountryCode
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "SMS notifications need locale.phoneCountryCode to build E.164 numbers",
+        path: ["locale", "phoneCountryCode"],
       });
     }
 
