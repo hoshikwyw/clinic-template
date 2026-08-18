@@ -172,13 +172,20 @@ pnpm test:integration  # needs a Postgres (see below)
 pnpm test:all
 ```
 
-**Integration tests** apply the real migration chain to an empty database and
-then check the things only Postgres can answer: that the partial unique index
-actually stops a double booking, that cancelling and no-shows free the slot,
-that the rate-limit upsert counts per window, and that the RLS policies show a
-patient their own records and nobody else's. The app's own queries run on a
-trusted connection that bypasses RLS, so without these the policies are never
-executed by anything.
+**Integration tests** apply the real migration chain to an empty database, then
+cover the two layers that cannot be tested in JavaScript:
+
+- **The database** — that the partial unique index actually stops a double
+  booking, that cancelling and no-shows free the slot, that the rate-limit
+  upsert counts per window, that the daily cap uses the clinic's day boundary
+  rather than UTC's, and that the RLS policies show a patient their own records
+  and nobody else's. The app's own queries run on a trusted connection that
+  bypasses RLS, so without these the policies are never executed by anything.
+- **The booking actions** — the real server actions against a real database,
+  with only the Next.js edges (headers, locale, session, cache) mocked: provider
+  auto-assignment and fall-through, guest deduplication across phone formats,
+  the abuse limits, the per-patient daily cap, and the ownership and
+  cancellation-window checks.
 
 ```bash
 docker run -d --rm --name clinic-test-pg   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=clinic_test   -p 55433:5432 postgres:16-alpine
