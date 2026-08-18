@@ -18,6 +18,13 @@ import {
 } from "./schema";
 
 export * from "./schema";
+export {
+  runLaunchChecks,
+  hasBlockingFindings,
+  type CheckLevel,
+  type CheckFinding,
+  type LaunchCheckInput,
+} from "./launch-check";
 
 /**
  * Author a clinic config with full type-checking + inference.

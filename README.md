@@ -115,12 +115,51 @@ walkthrough: [docs/09 — New Clinic Checklist](./docs/09-new-clinic-checklist.m
    filled sample like `smile-dental.ts` by hand. Edit branding, services, intake
    form, business hours, booking rules, languages, and enabled modules.
 2. Point [`config/clinic.ts`](./config/clinic.ts) at it (`activeClinic = ...`).
-3. Swap the icon assets (`app/icon.svg`, `app/favicon.ico`, `public/icon.svg`).
+3. Swap the icon assets — `app/favicon.ico` and `public/icon.svg` (PWA). Add
+   `app/icon.svg` to have Next generate the app icon from it; the template does
+   not ship one. `pnpm launch-check` reports any still on the starter asset.
 4. Give the clinic its own Supabase project + env, deploy.
 
 The pediatric sample (`little-stars-pediatric.ts`) is a deliberately different
 clinic — verified to run on this exact code (different services, Myanmar default,
 telehealth on).
+
+## Before you launch a clinic
+
+```bash
+pnpm launch-check
+```
+
+Audits the active config **and** the environment against
+[docs/09 — New Clinic Checklist](./docs/09-new-clinic-checklist.md): template
+text nobody filled in, no phone number for patients to call, holidays that all
+expired last year, a notification channel enabled with no gateway configured,
+`CRON_SECRET` unset (which silently disables every reminder). Exits non-zero on
+anything that would break for real patients, so it can gate a deploy.
+
+Add `--config-only` to skip everything that reads the environment — useful for
+reviewing a clinic's config before its secrets exist.
+
+> Run this against a **real** clinic, not the template. The shipped samples use
+> `.example` addresses and starter icons, which it will (correctly) flag.
+
+## Demo data
+
+```bash
+pnpm seed-demo            # dry run — says what it would create
+pnpm seed-demo --apply
+pnpm seed-demo --clean --apply
+```
+
+Fills the database with a believable clinic — three weeks of history, a week
+ahead, a realistic status mix (including no-shows, so the reports have something
+to show), spread across the configured providers and services. Built from the
+clinic's own hours and slot size, and deterministic, so a demo looks the same
+every time.
+
+Refuses to run against a database that already holds non-seeded patients, and
+refuses in production without `--yes-really`. Everything it creates is tagged,
+and `--clean` removes exactly that.
 
 ## Testing
 

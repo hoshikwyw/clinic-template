@@ -47,6 +47,10 @@ jobs:
       - name: Test
         run: pnpm test
 
+      # NOTE: deliberately no `pnpm launch-check` step. That audits a real
+      # clinic deployment, and this repo's active clinic is a sample — whose
+      # ".example" contact address and starter icons it correctly flags. Run it
+      # against a real clinic before deploying, not against the template.
       - name: Build
         run: pnpm build
         env:

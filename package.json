@@ -19,6 +19,8 @@
     "new-clinic": "tsx scripts/new-clinic.ts",
     "set-role": "dotenv -e .env.local -- tsx scripts/set-role.ts",
     "backfill-phones": "dotenv -e .env.local -- tsx scripts/backfill-phones.ts",
+    "launch-check": "dotenv -e .env.local -- tsx scripts/launch-check.ts",
+    "seed-demo": "dotenv -e .env.local -- tsx scripts/seed-demo.ts",
     "cap:add:android": "cap add android",
     "cap:sync": "cap sync"
   },

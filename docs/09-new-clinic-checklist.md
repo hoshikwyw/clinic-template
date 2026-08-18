@@ -88,9 +88,10 @@ telehealth service without the telehealth module) fail fast with a clear error.
 
 Replace the static assets with the clinic's icon (keep the filenames):
 
-- [ ] `app/icon.svg` (app icon + favicon)
-- [ ] `app/favicon.ico`
-- [ ] `public/icon.svg` (PWA)
+- [ ] `app/favicon.ico` — ships as the starter asset; replace it
+- [ ] `public/icon.svg` — the PWA icon
+- [ ] `app/icon.svg` — *optional*, and not shipped: add one and Next generates
+      the app icon from it
 
 The PWA manifest name/colors come from the config automatically.
 
