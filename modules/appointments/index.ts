@@ -19,12 +19,15 @@ export {
 // Patient-facing server actions
 export {
   getAvailableSlots,
+  getServiceProviders,
   createAppointment,
   getMyAppointments,
   cancelMyAppointment,
   rescheduleMyAppointment,
   type CreateAppointmentInput,
   type BookingResult,
+  type BookingErrorCode,
+  type BookableProvider,
   type MyAppointment,
   type CancelResult,
   type RescheduleResult,
@@ -50,5 +53,7 @@ export {
   toAppointmentDTO,
   type AppointmentDTO,
   type ActionResult,
+  type ProviderSlot,
+  type ProviderDaySlots,
 } from "./dto";
 export { APPOINTMENTS_PAGE_SIZE } from "./pagination";

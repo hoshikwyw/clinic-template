@@ -53,6 +53,17 @@ Colors accept any CSS color. See [04 — UI/UX System](./04-ui-ux-system.md).
       instead of two records.
 - [ ] `businessHours.breaks` — recurring lunch / cleaning / ward-round blocks
 - [ ] `businessHours.exceptions` — public holidays, closures, special openings
+- [ ] `providers` — the bookable clinicians (or chairs, or rooms). Each gets its
+      own calendar, so a clinic with three dentists can run three parallel
+      appointments. Optional: with none configured the clinic behaves as a
+      single calendar, exactly as before.
+      - `serviceIds` — omit for "performs everything"
+      - `hours` — personal working pattern, **intersected** with the clinic's
+        (a provider can never open a day the clinic has closed)
+      - `bookable: false` — on leave or departed, but kept so their past
+        appointments still show their name
+      - The public site's team section (`doctors`) is derived from this list,
+        so describe the team once.
 - [ ] `contact`, `about`, `doctors`, `faq` — public-site content
 - [ ] `staffRoles` — role labels for the staff directory
 

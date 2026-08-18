@@ -109,6 +109,8 @@ export async function getPatientDetail(
       serviceName: appointments.serviceName,
       startAt: appointments.startAt,
       status: appointments.status,
+      providerId: appointments.providerId,
+      providerName: appointments.providerName,
     })
     .from(appointments)
     .where(eq(appointments.patientId, id))

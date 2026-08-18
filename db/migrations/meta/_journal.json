@@ -50,6 +50,13 @@
       "when": 1787029880545,
       "tag": "0006_add_no_show_phone_normalized_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787031641638,
+      "tag": "0007_providers_per_slot_uniqueness",
+      "breakpoints": true
     }
   ]
 }

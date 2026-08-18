@@ -255,7 +255,13 @@ export const faqItemSchema = z.object({
 });
 export type FaqItem = z.infer<typeof faqItemSchema>;
 
-/** A clinician shown on the public site's team section. */
+/**
+ * A clinician shown on the public site's team section.
+ *
+ * DERIVED, not authored: fill in `providers` instead and this list is populated
+ * from it at parse time. Kept as its own type because the public site only ever
+ * needs the display fields.
+ */
 export const doctorSchema = z.object({
   name: z.string().min(1),
   /** e.g. "Dentist", "Orthodontist", "Pediatrician" */
@@ -263,6 +269,68 @@ export const doctorSchema = z.object({
   bio: z.string().optional(),
 });
 export type Doctor = z.infer<typeof doctorSchema>;
+
+/**
+ * A provider's own working pattern, layered on top of the clinic's.
+ *
+ * Every field is optional and falls back to the clinic's. The two are
+ * INTERSECTED, never merged: a slot is bookable only when the clinic is open
+ * AND the provider is working, and breaks from both sides apply. That is the
+ * only sane reading — a dentist cannot see patients while the building is shut,
+ * so a provider can never open a day the clinic has closed.
+ *
+ * `slotMinutes` and `bookingHorizonDays` are deliberately absent: those are
+ * clinic-wide booking policy, not personal schedule.
+ */
+export const providerHoursSchema = z
+  .object({
+    openDays: z.array(z.number().int().min(0).max(6)).optional(),
+    openTime: timeOfDay.optional(),
+    closeTime: timeOfDay.optional(),
+    /** this provider's own breaks, on top of the clinic's */
+    breaks: z.array(scheduleBreakSchema).default([]),
+    /** leave, conference days, personal closures */
+    exceptions: z.array(scheduleExceptionSchema).default([]),
+  })
+  .refine((h) => !h.openTime || !h.closeTime || h.openTime < h.closeTime, {
+    error: "openTime must be earlier than closeTime",
+    path: ["closeTime"],
+  });
+export type ProviderHours = z.infer<typeof providerHoursSchema>;
+
+/**
+ * A bookable provider — a dentist, a physio, or equally a chair or a room.
+ *
+ * This is what lifts the app off its single-appointment-at-a-time floor: the
+ * unique-slot constraint is per provider, so a clinic with three dentists can
+ * run three parallel chairs. A clinic that configures none still works — an
+ * implicit single provider stands in for the clinic itself (see
+ * getBookableProviders), which is exactly the old behaviour.
+ */
+export const providerSchema = z.object({
+  /** stable identifier — appointments reference it, so don't renumber it */
+  id: z.string().min(1),
+  name: z.string().min(1),
+  /** e.g. "Dentist", "Orthodontist", "Pediatrician" */
+  role: z.string().min(1),
+  bio: z.string().optional(),
+  /** service ids this provider performs; omit for all of them */
+  serviceIds: z.array(z.string()).optional(),
+  /** personal working pattern; omit to follow the clinic's hours exactly */
+  hours: providerHoursSchema.optional(),
+  /** false = temporarily unbookable (on leave, left) but kept for history */
+  bookable: z.boolean().default(true),
+  /** show on the public site's team section */
+  showOnWebsite: z.boolean().default(true),
+});
+export type Provider = z.infer<typeof providerSchema>;
+
+/**
+ * Stands in for "the clinic" when no providers are configured, so
+ * appointments.provider_id is never null and the per-provider unique index
+ * keeps working for single-provider clinics.
+ */
+export const DEFAULT_PROVIDER_ID = "clinic";
 
 const clinicConfigBaseSchema = z.object({
   id: z.string().min(1),
@@ -283,7 +351,13 @@ const clinicConfigBaseSchema = z.object({
   faq: z.array(faqItemSchema).default([]),
   /** public landing-page content (optional, clinic-authored) */
   about: z.string().optional(),
+  /**
+   * Derived from `providers` at parse time — authoring this directly still
+   * works for a clinic that has no bookable providers to describe.
+   */
   doctors: z.array(doctorSchema).default([]),
+  /** bookable providers / chairs / rooms — see providerSchema */
+  providers: z.array(providerSchema).default([]),
   staffRoles: z.array(z.string()).default([]),
 });
 
@@ -319,8 +393,66 @@ export const clinicConfigSchema = clinicConfigBaseSchema.superRefine(
         }
       });
     }
+
+    // Provider ids must be unique — appointments reference them, and a
+    // duplicate would make two people share one calendar.
+    const seenProviders = new Set<string>();
+    cfg.providers.forEach((p, i) => {
+      if (seenProviders.has(p.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Duplicate provider id "${p.id}"`,
+          path: ["providers", i, "id"],
+        });
+      }
+      seenProviders.add(p.id);
+
+      // A typo'd service id silently removes that service from the provider,
+      // which surfaces as mysteriously missing availability.
+      p.serviceIds?.forEach((sid, j) => {
+        if (!seen.has(sid)) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Provider "${p.id}" lists unknown service id "${sid}"`,
+            path: ["providers", i, "serviceIds", j],
+          });
+        }
+      });
+    });
+
+    // Every service needs someone who can actually perform it. Without this
+    // check the service sits on the booking page offering zero slots forever,
+    // and it reads as a bug rather than a config mistake.
+    const bookableProviders = cfg.providers.filter((p) => p.bookable);
+    if (bookableProviders.length > 0) {
+      cfg.services.forEach((s, i) => {
+        const covered = bookableProviders.some(
+          (p) => !p.serviceIds || p.serviceIds.includes(s.id)
+        );
+        if (!covered) {
+          ctx.addIssue({
+            code: "custom",
+            message: `No bookable provider offers service "${s.id}" — it would never have availability`,
+            path: ["services", i, "id"],
+          });
+        }
+      });
+    }
   }
-);
+).transform((cfg) => ({
+  ...cfg,
+  // One source of truth for the team. Providers describe who works here, so the
+  // public site's list is derived from them rather than maintained twice. An
+  // explicitly authored `doctors` list still wins, for a clinic that wants to
+  // show people it has nothing bookable for.
+  doctors:
+    cfg.doctors.length > 0
+      ? cfg.doctors
+      : cfg.providers
+          .filter((p) => p.showOnWebsite)
+          .map((p) => ({ name: p.name, role: p.role, bio: p.bio })),
+}));
+
 /** Output type (after parse — defaults applied). Use this everywhere downstream. */
 export type ClinicConfig = z.infer<typeof clinicConfigSchema>;
 

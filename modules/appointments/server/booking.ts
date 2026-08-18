@@ -11,18 +11,30 @@ import { checkRateLimits } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { normalizePhone } from "@/lib/phone";
 import { buildZodSchema } from "@form-engine/schema";
-import type { DaySlots } from "@modules/scheduling";
 import {
   notifyAppointmentBooked,
   notifyAppointmentStatus,
 } from "@modules/notifications";
+import { getProvidersForService, findProvider } from "@config-engine";
 import {
   computeAvailableSlots,
   isUniqueViolation,
   moveAppointment,
   occupiesSlot,
+  providersFreeAt,
 } from "./core";
-import { toAppointmentDTO, type AppointmentDTO } from "../dto";
+import {
+  toAppointmentDTO,
+  type AppointmentDTO,
+  type ProviderDaySlots,
+} from "../dto";
+
+/** Minimal provider shape for the booking UI (no schedule, no bio). */
+export interface BookableProvider {
+  id: string;
+  name: string;
+  role: string;
+}
 
 /**
  * Booking server actions. Run on a trusted direct DB connection (Drizzle), so
@@ -30,14 +42,34 @@ import { toAppointmentDTO, type AppointmentDTO } from "../dto";
  * a patient row is created with no auth user.
  */
 
-/** Available slots for a service, with already-booked slots removed. */
-export async function getAvailableSlots(serviceId: string): Promise<DaySlots[]> {
-  return computeAvailableSlots(serviceId);
+/**
+ * Available slots for a service, with already-booked slots removed. Each slot
+ * carries the providers free at that time; pass `providerId` to restrict to one
+ * clinician ("I want to see Dr. Aung").
+ */
+export async function getAvailableSlots(
+  serviceId: string,
+  providerId?: string
+): Promise<ProviderDaySlots[]> {
+  return computeAvailableSlots(serviceId, providerId);
+}
+
+/** The clinic's bookable providers for a service, for the booking UI. */
+export async function getServiceProviders(
+  serviceId: string
+): Promise<BookableProvider[]> {
+  return getProvidersForService(getClinicConfig(), serviceId).map((p) => ({
+    id: p.id,
+    name: p.name,
+    role: p.role,
+  }));
 }
 
 const createAppointmentInput = z.object({
   serviceId: z.string().min(1),
   startIso: z.string().min(1),
+  /** requested clinician; omit for "any available" */
+  providerId: z.string().min(1).optional(),
   contact: z.object({
     fullName: z.string().min(1),
     phone: z.string().min(1),
@@ -62,13 +94,16 @@ export type BookingErrorCode =
   | "invalidTime"
   | "slotTaken"
   | "rateLimited"
-  | "dailyLimit";
+  | "dailyLimit"
+  | "providerUnavailable";
 
 export interface BookingResult {
   ok: boolean;
   appointmentId?: string;
   serviceName?: string;
   startIso?: string;
+  /** who the appointment landed with — shown on the confirmation step */
+  providerName?: string;
   code?: BookingErrorCode;
   /** English fallback copy; prefer `code` for anything user-facing. */
   error?: string;
@@ -85,6 +120,8 @@ const BOOKING_ERROR_TEXT: Record<BookingErrorCode, string> = {
   slotTaken: "Sorry, that slot was just taken. Pick another.",
   rateLimited: "Too many booking attempts. Please try again shortly.",
   dailyLimit: "You already have an appointment booked for that day.",
+  providerUnavailable:
+    "That clinician isn't available then. Pick another time or clinician.",
 };
 
 function bookingError(
@@ -175,13 +212,23 @@ export async function createAppointment(
   if (Number.isNaN(startAt.getTime())) return bookingError("invalidTime");
   const endAt = new Date(startAt.getTime() + service.durationMinutes * 60_000);
 
-  // Guard against the slot being taken between listing and confirming.
-  const clash = await db
-    .select({ id: appointments.id })
-    .from(appointments)
-    .where(and(eq(appointments.startAt, startAt), occupiesSlot()))
-    .limit(1);
-  if (clash.length > 0) return bookingError("slotTaken");
+  // Who could actually take this appointment? Resolves the requested clinician
+  // (or "any"), and doubles as the guard against the slot being taken between
+  // listing and confirming — providersFreeAt already excludes booked calendars.
+  const candidates = await providersFreeAt(
+    service.id,
+    startAt.toISOString(),
+    input.providerId
+  );
+  if (candidates.length === 0) {
+    // Distinguish "gone entirely" from "that one clinician is busy", so the
+    // patient is told something they can act on.
+    if (input.providerId) {
+      const stillOpen = await providersFreeAt(service.id, startAt.toISOString());
+      if (stillOpen.length > 0) return bookingError("providerUnavailable");
+    }
+    return bookingError("slotTaken");
+  }
 
   // Logged-in patient → reuse/refresh their record; guest → create a new one.
   const user = await getSessionUser();
@@ -295,30 +342,41 @@ export async function createAppointment(
     if (Number(row?.used ?? 0) >= maxPerDay) return bookingError("dailyLimit");
   }
 
-  let appointmentId: string;
-  let confirmedStartIso: string;
-  try {
-    const [appt] = await db
-      .insert(appointments)
-      .values({
-        patientId,
-        serviceId: service.id,
-        serviceName: service.name,
-        startAt,
-        endAt,
-        status: "pending",
-      })
-      .returning({ id: appointments.id, startAt: appointments.startAt });
-    appointmentId = appt.id;
-    confirmedStartIso = appt.startAt.toISOString();
-  } catch (err) {
-    // The partial unique index (appointments_active_slot_unique) makes this the
-    // authoritative, race-free clash check — the earlier select is just a fast
-    // path for the common case.
-    if (isUniqueViolation(err)) {
-      return { ok: false, error: "Sorry, that slot was just taken. Pick another." };
+  // The partial unique index (appointments_active_slot_unique) is the
+  // authoritative, race-free clash check; the availability query above is a
+  // fast path. With several providers free, a lost race means someone else took
+  // ONE calendar — so try the next candidate instead of turning the patient
+  // away from a slot the clinic can still honour.
+  let appointmentId: string | undefined;
+  let confirmedStartIso: string | undefined;
+  let assignedProvider: string | undefined;
+
+  for (const candidate of candidates) {
+    try {
+      const [appt] = await db
+        .insert(appointments)
+        .values({
+          patientId,
+          serviceId: service.id,
+          serviceName: service.name,
+          providerId: candidate,
+          providerName: findProvider(config, candidate)?.name ?? null,
+          startAt,
+          endAt,
+          status: "pending",
+        })
+        .returning({ id: appointments.id, startAt: appointments.startAt });
+      appointmentId = appt.id;
+      confirmedStartIso = appt.startAt.toISOString();
+      assignedProvider = candidate;
+      break;
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
     }
-    throw err;
+  }
+
+  if (!appointmentId || !confirmedStartIso) {
+    return bookingError(input.providerId ? "providerUnavailable" : "slotTaken");
   }
 
   await notifyAppointmentBooked({
@@ -334,6 +392,9 @@ export async function createAppointment(
     appointmentId,
     serviceName: service.name,
     startIso: confirmedStartIso,
+    providerName: assignedProvider
+      ? findProvider(config, assignedProvider)?.name
+      : undefined,
   };
 }
 
@@ -351,6 +412,8 @@ export async function getMyAppointments(): Promise<MyAppointment[]> {
       serviceName: appointments.serviceName,
       startAt: appointments.startAt,
       status: appointments.status,
+      providerId: appointments.providerId,
+      providerName: appointments.providerName,
     })
     .from(appointments)
     .innerJoin(patients, eq(appointments.patientId, patients.id))
@@ -452,6 +515,7 @@ export async function rescheduleMyAppointment(
     .select({
       id: appointments.id,
       serviceId: appointments.serviceId,
+      providerId: appointments.providerId,
       startAt: appointments.startAt,
       status: appointments.status,
     })
@@ -473,6 +537,13 @@ export async function rescheduleMyAppointment(
     return { ok: false, error: "window" };
   }
 
-  // Ownership + window verified; delegate slot validation + the write.
-  return moveAppointment(appointmentId, row.serviceId, startIso);
+  // Ownership + window verified; delegate slot validation + the write. Passing
+  // the current provider keeps the patient with the same clinician when they
+  // are free at the new time.
+  return moveAppointment(
+    appointmentId,
+    row.serviceId,
+    startIso,
+    row.providerId
+  );
 }

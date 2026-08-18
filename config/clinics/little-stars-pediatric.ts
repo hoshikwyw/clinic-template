@@ -86,13 +86,40 @@ export const littleStarsPediatric = defineClinicConfig({
     bookingHorizonDays: 21,
     // Deliberately different from the dental sample: this is the Phase 3
     // reusability check — two clinics, same engine, different shape of day.
-    breaks: [
-      { startTime: "12:00", endTime: "13:00", label: "Lunch" },
-      // Wednesday afternoon is reserved for the vaccination clinic.
-      { startTime: "14:00", endTime: "16:30", days: [3], label: "Vaccinations" },
-    ],
+    breaks: [{ startTime: "12:00", endTime: "13:00", label: "Lunch" }],
     exceptions: [{ from: "2027-04-13", to: "2027-04-16", label: "Thingyan" }],
   },
+  // Deliberately a different shape from the dental sample: one full-time
+  // pediatrician plus a part-time nurse who only does vaccinations. Proves the
+  // provider model is not dental-specific.
+  providers: [
+    {
+      id: "thida",
+      name: "Dr. Thida Aye",
+      role: "Pediatrician",
+      bio: "Twelve years in child health, with a special interest in newborn care.",
+      hours: {
+        // Wednesday afternoon is the vaccination clinic, so she is not taking
+        // general appointments then. Modelled as HER break, not the clinic's:
+        // the building is open and the nurse is working.
+        breaks: [
+          { startTime: "14:00", endTime: "16:30", days: [3], label: "Vaccination clinic" },
+        ],
+      },
+    },
+    {
+      id: "nurse-moe",
+      name: "Nurse Moe Moe",
+      role: "Immunisation Nurse",
+      serviceIds: ["vaccination"],
+      hours: {
+        // Vaccination clinic: Wednesday afternoons only.
+        openDays: [3],
+        openTime: "14:00",
+        closeTime: "16:30",
+      },
+    },
+  ],
   // Pediatric: book under the guardian; the child's details are in the intake.
   bookingContact: {
     nameLabel: "Parent / guardian name",

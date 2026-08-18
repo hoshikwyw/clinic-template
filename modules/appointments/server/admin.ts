@@ -38,6 +38,8 @@ const adminAppointmentColumns = {
   serviceName: appointments.serviceName,
   startAt: appointments.startAt,
   status: appointments.status,
+  providerId: appointments.providerId,
+  providerName: appointments.providerName,
 };
 
 function toAdminAppointment(r: {
@@ -49,6 +51,8 @@ function toAdminAppointment(r: {
   serviceName: string;
   startAt: Date;
   status: string;
+  providerId: string;
+  providerName: string | null;
 }): AdminAppointment {
   return {
     ...toAppointmentDTO(r),
@@ -193,13 +197,21 @@ export async function rescheduleAppointment(
   await requireStaff();
 
   const [row] = await db
-    .select({ serviceId: appointments.serviceId })
+    .select({
+      serviceId: appointments.serviceId,
+      providerId: appointments.providerId,
+    })
     .from(appointments)
     .where(eq(appointments.id, appointmentId))
     .limit(1);
   if (!row) return { ok: false, error: "notFound" };
 
-  const result = await moveAppointment(appointmentId, row.serviceId, startIso);
+  const result = await moveAppointment(
+    appointmentId,
+    row.serviceId,
+    startIso,
+    row.providerId
+  );
   if (result.ok) revalidatePath("/admin");
   return result;
 }

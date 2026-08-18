@@ -93,21 +93,43 @@ export const smileDental = defineClinicConfig({
     "Smile Dental Clinic has cared for families across Yangon for over 15 years. " +
     "Our team combines gentle, modern dentistry with a calm, welcoming space — " +
     "from routine check-ups to cosmetic work, you're in good hands.",
-  doctors: [
+  // Three parallel calendars. `doctors` (the public team section) is derived
+  // from this list, so the team is described once.
+  providers: [
     {
+      id: "aung-min",
       name: "Dr. Aung Min",
       role: "Lead Dentist",
       bio: "15+ years in general and cosmetic dentistry. Gentle with anxious patients.",
+      // No serviceIds → performs every service.
     },
     {
+      id: "su-latt",
       name: "Dr. Su Latt",
       role: "Orthodontist",
       bio: "Specialist in braces and aligners for children and adults.",
+      serviceIds: ["checkup", "cleaning"],
+      hours: {
+        openDays: [1, 3, 5], // Mon / Wed / Fri only
+      },
     },
     {
+      id: "kyaw-zin",
       name: "Dr. Kyaw Zin",
       role: "Oral Surgeon",
       bio: "Extractions, implants, and surgical care with a focus on comfort.",
+      serviceIds: ["extraction", "filling", "checkup"],
+      hours: {
+        // Starts late. The 18:00 close is intentionally past the clinic's
+        // 17:00 — provider and clinic hours are intersected, so it clips to
+        // 17:00 rather than opening the building an hour longer.
+        openTime: "10:00",
+        closeTime: "18:00",
+        exceptions: [
+          // Personal leave — the rest of the clinic stays open.
+          { from: "2027-06-01", to: "2027-06-14", label: "Annual leave" },
+        ],
+      },
     },
   ],
   contact: {

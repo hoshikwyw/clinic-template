@@ -18,11 +18,31 @@ clinic: {
   specialty:  "dental" | "pediatric" | "physio" | "general" | "...",
   modules:    { appointments: true, billing: false, telehealth: false, ... },
   services:   [ { name, duration, price, requiresRoom, ... } ],
+  providers:  [ { id, name, role, serviceIds?, hours? } ],
   intakeForm: [ /* field definitions — schema-driven, not hardcoded */ ],
   staffRoles: [ ... ],
   bookingRules: { leadTime, cancellationWindow, ... },
+  businessHours: { openDays, openTime, closeTime, breaks, exceptions, ... },
 }
 ```
+
+### Providers — one calendar each
+
+`providers` are the clinic's bookable resources: clinicians, but equally chairs
+or rooms. Availability and the unique-slot database index are **per provider**,
+so a clinic with three dentists sells three parallel appointments at 09:00.
+
+- A clinic that configures none still works — an implicit single provider stands
+  in for the clinic itself, so every code path is the same and a single-chair
+  clinic behaves exactly as it did before providers existed.
+- Provider hours are **intersected** with the clinic's, never merged: a slot is
+  bookable only when the clinic is open *and* the provider is working, and
+  breaks from both apply. A provider therefore cannot open a day the clinic has
+  closed — the building is shut.
+- Patients may request a clinician or leave it to "any available", in which case
+  the server assigns the first free provider in config order. If that write
+  loses the race for the slot, it retries with the next free provider rather
+  than turning the patient away from a slot the clinic can still honour.
 
 ### B. Feature Modules (the organs)
 

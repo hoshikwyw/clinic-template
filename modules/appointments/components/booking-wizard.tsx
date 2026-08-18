@@ -12,10 +12,12 @@ import {
 import { FormRenderer, type FormSchema } from "@form-engine";
 import {
   getAvailableSlots,
+  getServiceProviders,
   createAppointment,
   type BookingResult,
+  type BookableProvider,
 } from "../server/booking";
-import type { DaySlots, Slot } from "@modules/scheduling";
+import type { ProviderDaySlots, ProviderSlot } from "../dto";
 
 export interface BookingService {
   id: string;
@@ -59,10 +61,15 @@ export function BookingWizard({
 
   const [stepIndex, setStepIndex] = React.useState(0);
   const [serviceId, setServiceId] = React.useState<string | null>(null);
-  const [days, setDays] = React.useState<DaySlots[] | null>(null);
+  const [days, setDays] = React.useState<ProviderDaySlots[] | null>(null);
   const [loadingSlots, setLoadingSlots] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
-  const [slot, setSlot] = React.useState<Slot | null>(null);
+  const [slot, setSlot] = React.useState<ProviderSlot | null>(null);
+  // Providers who perform the chosen service. `null` provider = "any available",
+  // which lets the server assign whoever is free — the common case, and the one
+  // that keeps the most slots on screen.
+  const [providers, setProviders] = React.useState<BookableProvider[]>([]);
+  const [providerId, setProviderId] = React.useState<string | null>(null);
   const [contact, setContact] = React.useState<Record<string, unknown> | null>(
     null
   );
@@ -130,12 +137,38 @@ export function BookingWizard({
     setSlot(null);
     setSelectedDate(null);
     setDays(null);
+    setProviderId(null);
+    setProviders([]);
     setLoadingSlots(true);
     setStepIndex(1);
     try {
-      const d = await getAvailableSlots(id);
+      // In parallel: the clinicians who perform this service, and every time
+      // any of them is free. One round trip either way.
+      const [d, p] = await Promise.all([
+        getAvailableSlots(id),
+        getServiceProviders(id),
+      ]);
+      setProviders(p);
       setDays(d);
       setSelectedDate(d[0]?.date ?? null);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }
+
+  /** Narrow (or widen) availability to one clinician. `null` = any available. */
+  async function chooseProvider(id: string | null) {
+    if (!serviceId) return;
+    setProviderId(id);
+    setSlot(null);
+    setLoadingSlots(true);
+    try {
+      const d = await getAvailableSlots(serviceId, id ?? undefined);
+      setDays(d);
+      // Keep the day the patient was looking at when it still has times.
+      setSelectedDate((prev) =>
+        prev && d.some((day) => day.date === prev) ? prev : (d[0]?.date ?? null)
+      );
     } finally {
       setLoadingSlots(false);
     }
@@ -148,6 +181,7 @@ export function BookingWizard({
       const res = await createAppointment({
         serviceId: service.id,
         startIso: slot.startIso,
+        providerId: providerId ?? undefined,
         contact: {
           fullName: String(contact?.fullName ?? ""),
           phone: String(contact?.phone ?? ""),
@@ -167,6 +201,8 @@ export function BookingWizard({
     setDays(null);
     setSelectedDate(null);
     setSlot(null);
+    setProviders([]);
+    setProviderId(null);
     setContact(null);
     setIntake(null);
     setResult(null);
@@ -185,6 +221,11 @@ export function BookingWizard({
             {result.serviceName} ·{" "}
             {result.startIso ? formatWhen(result.startIso) : ""}
           </p>
+          {result.providerName && (
+            <p className="text-muted-foreground">
+              {t("withProvider", { name: result.providerName })}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">{t("contactNote")}</p>
           <Button onClick={reset} variant="outline" size="lg" className="mt-2">
             {t("bookAnother")}
@@ -249,6 +290,44 @@ export function BookingWizard({
 
       {step === "when" && (
         <div className="space-y-4">
+          {/* Clinician picker — only worth showing when there is a choice. */}
+          {providers.length > 1 && (
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">
+                {t("providerLabel")}
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  aria-pressed={providerId === null}
+                  onClick={() => chooseProvider(null)}
+                  className={`min-h-11 rounded-full border px-4 text-sm ${
+                    providerId === null
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border"
+                  }`}
+                >
+                  {t("anyProvider")}
+                </button>
+                {providers.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={providerId === p.id}
+                    onClick={() => chooseProvider(p.id)}
+                    className={`min-h-11 rounded-full border px-4 text-sm ${
+                      providerId === p.id
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border"
+                    }`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
           {loadingSlots && (
             <p className="text-sm text-muted-foreground">{t("findingTimes")}</p>
           )}
@@ -351,6 +430,16 @@ export function BookingWizard({
                 label={t("when")}
                 value={slot ? formatWhen(slot.startIso) : ""}
               />
+              {providers.length > 1 && (
+                <Row
+                  label={t("providerLabel")}
+                  value={
+                    providerId
+                      ? (providers.find((p) => p.id === providerId)?.name ?? "")
+                      : t("anyProvider")
+                  }
+                />
+              )}
               <Row label={t("name")} value={String(contact?.fullName ?? "")} />
               <Row label={t("phone")} value={String(contact?.phone ?? "")} />
             </CardContent>

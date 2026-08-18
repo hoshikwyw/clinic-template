@@ -1,5 +1,6 @@
 import type {
   BusinessHours,
+  ProviderHours,
   ScheduleBreak,
   ScheduleException,
 } from "@config-engine";
@@ -183,8 +184,16 @@ export function findScheduleException(
   return match;
 }
 
+/** The subset of business hours that describes *when* someone is available. */
+interface OpenPattern {
+  openDays: number[];
+  openTime: string;
+  closeTime: string;
+  exceptions: ScheduleException[];
+}
+
 /**
- * The open window for one local date, or null when the clinic is shut.
+ * The open window for one local date, or null when shut.
  *
  * Precedence: a dated exception beats the weekly pattern entirely — including
  * opening a day that is not normally an open day, which is how a clinic
@@ -192,11 +201,11 @@ export function findScheduleException(
  * and still apply inside special hours.
  */
 function resolveDayWindow(
-  bh: BusinessHours,
+  pattern: OpenPattern,
   date: string,
   weekday: number
 ): MinuteRange | null {
-  const exception = findScheduleException(bh.exceptions, date);
+  const exception = findScheduleException(pattern.exceptions, date);
 
   if (exception) {
     if (exception.closed) return null;
@@ -207,8 +216,18 @@ function resolveDayWindow(
     };
   }
 
-  if (!bh.openDays.includes(weekday)) return null;
-  return { start: toMinutes(bh.openTime), end: toMinutes(bh.closeTime) };
+  if (!pattern.openDays.includes(weekday)) return null;
+  return {
+    start: toMinutes(pattern.openTime),
+    end: toMinutes(pattern.closeTime),
+  };
+}
+
+/** Overlap of two windows, or null when they don't meet. */
+function intersect(a: MinuteRange, b: MinuteRange): MinuteRange | null {
+  const start = Math.max(a.start, b.start);
+  const end = Math.min(a.end, b.end);
+  return start < end ? { start, end } : null;
 }
 
 /** Breaks that apply on a given weekday, as minute ranges. */
@@ -228,6 +247,12 @@ export interface GenerateSlotsOptions {
   serviceDurationMinutes: number;
   timeZone: string;
   leadTimeHours: number;
+  /**
+   * One provider's own pattern, intersected with the clinic's. Omit to use the
+   * clinic hours unchanged (single-provider clinics, or a provider who simply
+   * works whenever the clinic is open).
+   */
+  providerHours?: ProviderHours;
   /** locale for the human-readable day label (defaults to en-GB) */
   locale?: string;
   now?: Date;
@@ -240,9 +265,29 @@ export function generateDaySlots(opts: GenerateSlotsOptions): DaySlots[] {
     serviceDurationMinutes,
     timeZone,
     leadTimeHours,
+    providerHours,
     locale = "en-GB",
     now = new Date(),
   } = opts;
+
+  const clinicPattern: OpenPattern = {
+    openDays: bh.openDays,
+    openTime: bh.openTime,
+    closeTime: bh.closeTime,
+    exceptions: bh.exceptions,
+  };
+
+  // Fields the provider leaves unset fall back to the clinic's. Their
+  // exceptions do NOT — the clinic's are applied separately and both must pass,
+  // so a provider can never open a day the clinic has closed.
+  const providerPattern: OpenPattern | null = providerHours
+    ? {
+        openDays: providerHours.openDays ?? bh.openDays,
+        openTime: providerHours.openTime ?? bh.openTime,
+        closeTime: providerHours.closeTime ?? bh.closeTime,
+        exceptions: providerHours.exceptions,
+      }
+    : null;
 
   const minStart = new Date(now.getTime() + leadTimeHours * 3_600_000);
 
@@ -263,10 +308,23 @@ export function generateDaySlots(opts: GenerateSlotsOptions): DaySlots[] {
     const weekday = cursor.getUTCDay();
     const date = `${year}-${pad(month)}-${pad(day)}`;
 
-    const window = resolveDayWindow(bh, date, weekday);
-    if (!window) continue;
+    const clinicWindow = resolveDayWindow(clinicPattern, date, weekday);
+    if (!clinicWindow) continue;
 
-    const dayBreaks = breaksFor(bh.breaks, weekday);
+    let window = clinicWindow;
+    if (providerPattern) {
+      const providerWindow = resolveDayWindow(providerPattern, date, weekday);
+      if (!providerWindow) continue;
+      const both = intersect(clinicWindow, providerWindow);
+      if (!both) continue;
+      window = both;
+    }
+
+    // Breaks from both sides apply — the clinic's lunch and the provider's own.
+    const dayBreaks = [
+      ...breaksFor(bh.breaks, weekday),
+      ...(providerHours ? breaksFor(providerHours.breaks, weekday) : []),
+    ];
     const slots: Slot[] = [];
 
     for (

@@ -55,6 +55,16 @@ export const appointments = pgTable(
       .references(() => patients.id, { onDelete: "cascade" }),
     serviceId: text("service_id").notNull(),
     serviceName: text("service_name").notNull(),
+    /**
+     * Which provider's calendar this occupies. References a provider id in the
+     * clinic config, exactly like serviceId references a service. Defaults to
+     * the implicit single provider so clinics that configure none — and rows
+     * written before providers existed — still have a real value to key the
+     * unique-slot index on.
+     */
+    providerId: text("provider_id").notNull().default("clinic"),
+    /** name snapshot, so history survives a provider leaving the config */
+    providerName: text("provider_name"),
     startAt: timestamp("start_at", { withTimezone: true }).notNull(),
     endAt: timestamp("end_at", { withTimezone: true }).notNull(),
     status: appointmentStatus("status").default("pending").notNull(),
@@ -72,15 +82,18 @@ export const appointments = pgTable(
   (t) => [
     index("appointments_start_at_idx").on(t.startAt),
     index("appointments_patient_idx").on(t.patientId),
-    // Single-provider MVP: at most one active booking per start time. Makes the
-    // booking clash-check atomic at the DB level, closing the check-then-insert
-    // race in createAppointment.
-    // Compared as text, not as the enum, so the predicate can be created in the
-    // same migration that adds a new enum value (Postgres refuses to use a
+    // At most one active booking per provider per start time. Makes the booking
+    // clash-check atomic at the DB level, closing the check-then-insert race in
+    // createAppointment, while letting a clinic run as many parallel calendars
+    // as it has providers.
+    // Compared as text, not as the enum, so the predicate could be created in
+    // the same migration that added a new enum value (Postgres refuses to use a
     // freshly-added enum label inside the transaction that added it).
     uniqueIndex("appointments_active_slot_unique")
-      .on(t.startAt)
+      .on(t.providerId, t.startAt)
       .where(sql`status::text not in ('cancelled', 'no_show')`),
+    // Staff calendar views and availability both filter by provider + time.
+    index("appointments_provider_start_idx").on(t.providerId, t.startAt),
     pgPolicy("appointments_self_select", {
       for: "select",
       to: "authenticated",
