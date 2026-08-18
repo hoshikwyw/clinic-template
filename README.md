@@ -164,9 +164,29 @@ and `--clean` removes exactly that.
 ## Testing
 
 ```bash
-pnpm test         # Vitest — scheduling, forms, telehealth, config
+pnpm test              # unit — scheduling, forms, phone, config, notifications
 pnpm test:watch
+pnpm test:integration  # needs a Postgres (see below)
+pnpm test:all
 ```
+
+**Integration tests** apply the real migration chain to an empty database and
+then check the things only Postgres can answer: that the partial unique index
+actually stops a double booking, that cancelling and no-shows free the slot,
+that the rate-limit upsert counts per window, and that the RLS policies show a
+patient their own records and nobody else's. The app's own queries run on a
+trusted connection that bypasses RLS, so without these the policies are never
+executed by anything.
+
+```bash
+docker run -d --rm --name clinic-test-pg   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=clinic_test   -p 55433:5432 postgres:16-alpine
+
+pnpm test:integration
+docker stop clinic-test-pg
+```
+
+Override the connection with `TEST_DATABASE_URL`. Without a reachable database
+they skip rather than fail, so `pnpm test` works on any machine.
 
 ## Build & deploy
 

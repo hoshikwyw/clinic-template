@@ -86,12 +86,14 @@ export const appointments = pgTable(
     // clash-check atomic at the DB level, closing the check-then-insert race in
     // createAppointment, while letting a clinic run as many parallel calendars
     // as it has providers.
-    // Compared as text, not as the enum, so the predicate could be created in
-    // the same migration that added a new enum value (Postgres refuses to use a
-    // freshly-added enum label inside the transaction that added it).
+    // Compared as the enum, NOT via `status::text`: enum-to-text is only
+    // STABLE, and Postgres rejects a non-IMMUTABLE function in an index
+    // predicate. That is also why adding the `no_show` label and rebuilding
+    // this index have to be two separate migration files — a freshly-added
+    // enum label cannot be used in the transaction that added it.
     uniqueIndex("appointments_active_slot_unique")
       .on(t.providerId, t.startAt)
-      .where(sql`status::text not in ('cancelled', 'no_show')`),
+      .where(sql`status <> 'cancelled' and status <> 'no_show'`),
     // Staff calendar views and availability both filter by provider + time.
     index("appointments_provider_start_idx").on(t.providerId, t.startAt),
     pgPolicy("appointments_self_select", {

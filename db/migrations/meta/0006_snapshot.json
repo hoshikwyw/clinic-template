@@ -1,5 +1,5 @@
 {
-  "id": "a539a796-d7bd-46da-82b3-c209657e7903",
+  "id": "d3a066b3-50e5-4533-a897-e88e18f20874",
   "prevId": "5e6aed1e-4c56-4ce1-bf86-15540cbc5b54",
   "version": "7",
   "dialect": "postgresql",
@@ -255,7 +255,7 @@
             }
           ],
           "isUnique": true,
-          "where": "status::text not in ('cancelled', 'no_show')",
+          "where": "status <> 'cancelled'",
           "concurrently": false,
           "method": "btree",
           "with": {}

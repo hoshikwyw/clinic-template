@@ -1,6 +1,6 @@
 {
-  "id": "82aec3e0-e630-42a5-93a9-7c5f57d290d7",
-  "prevId": "a539a796-d7bd-46da-82b3-c209657e7903",
+  "id": "4f8f54d0-271a-442c-b645-0bd5b6cc19b4",
+  "prevId": "d3a066b3-50e5-4533-a897-e88e18f20874",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -274,7 +274,7 @@
             }
           ],
           "isUnique": true,
-          "where": "status::text not in ('cancelled', 'no_show')",
+          "where": "status <> 'cancelled' and status <> 'no_show'",
           "concurrently": false,
           "method": "btree",
           "with": {}

@@ -8,6 +8,24 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    # A throwaway Postgres for the integration suite. Those tests apply the real
+    # migration chain from empty and exercise the constraints and RLS policies —
+    # the parts the app relies on but cannot verify in JavaScript.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: clinic_test
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +64,11 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Integration tests (migrations, constraints, RLS)
+        run: pnpm test:integration
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:test@127.0.0.1:55433/clinic_test
 
       # NOTE: deliberately no `pnpm launch-check` step. That audits a real
       # clinic deployment, and this repo's active clinic is a sample — whose
